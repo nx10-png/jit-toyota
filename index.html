@@ -430,6 +430,14 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
         📂 RESTAURAR BACKUP
         <input type="file" accept=".json" style="display:none;" onchange="restaurarBackup(this)"/>
       </label>
+      <div style="height:1px;background:var(--gray-light);margin:14px 0;"></div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:8px;">📦 Base do estoque</div>
+      <div id="baseEstoqueInfo" class="alert alert-info show">Carregando base...</div>
+      <label class="btn btn-green" style="cursor:pointer;text-align:center;">
+        📤 CARREGAR ESTOQUE ATUALIZADO (CSV)
+        <input type="file" accept=".csv,text/csv" style="display:none;" onchange="importarEstoqueCSV(this)"/>
+      </label>
+      <div style="font-size:11px;color:var(--gray-mid);line-height:1.5;">Colunas aceitas: código, descrição, local, quantidade, custo, ICC e unidade. O arquivo pode usar vírgula ou ponto e vírgula.</div>
       <button class="btn btn-gray" style="margin-top:8px;" onclick="resetarInventario()">🗑 RESETAR INVENTÁRIO</button>
     </div>
     <div class="card ani">
@@ -483,13 +491,18 @@ const ITENS=[{"codigo":"ABISM04602","desc":"FAROL NEBLINA, YARIS","local":"SL","
 // ═══════════════════════════════════════════════
 // SISTEMA JIT v4 — LÓGICA
 // ═══════════════════════════════════════════════
+try{
+  const baseSalva=JSON.parse(localStorage.getItem("jit_itens")||"null");
+  if(Array.isArray(baseSalva)&&baseSalva.length) ITENS.splice(0,ITENS.length,...baseSalva);
+}catch(e){}
+
 const SENHA_LIDER = "1234"; // ← ALTERE AQUI
 
 const ICC_NOME = {A:"Mensal",B:"Bimestral",C:"Trimestral",D:"Semestral",E:"Anual",F:"Anual+",G:"Eventual",H:"Eventual",I:"Eventual",J:"Sem giro"};
 const ICC_BADGE = {A:"badge-red",B:"badge-orange",C:"badge-yellow",D:"badge-blue",E:"badge-gray",F:"badge-gray",G:"badge-gray",H:"badge-gray",I:"badge-gray",J:"badge-gray"};
 
 // Zonas dinâmicas a partir da base
-const ZONAS = [...new Set(ITENS.map(i=>i.zona))].sort();
+let ZONAS = [...new Set(ITENS.map(i=>i.zona))].sort();
 
 let S = {
   usuario:"", funcao:"", perfilSel:"estoquista",
@@ -508,6 +521,70 @@ function carregar(){try{const d=JSON.parse(localStorage.getItem("jit_v4")||"{}")
 function ts(){return new Date().toLocaleString("pt-BR");}
 function hora(){return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
 function el(id){return document.getElementById(id);}
+
+function atualizarInfoBase(){
+  const x=el("baseEstoqueInfo");
+  if(x)x.textContent=`✓ ${ITENS.length.toLocaleString("pt-BR")} itens carregados · ${ZONAS.length} zonas`;
+}
+function aplicarBaseEstoque(novaBase,propagar=true){
+  if(!Array.isArray(novaBase)||!novaBase.length)throw new Error("A base não contém itens válidos.");
+  ITENS.splice(0,ITENS.length,...novaBase);
+  ZONAS=[...new Set(ITENS.map(i=>i.zona))].sort();
+  localStorage.setItem("jit_itens",JSON.stringify(ITENS));
+  const libs={};ZONAS.forEach(z=>libs[z]=false);S.liberacoes=libs;
+  S.selecao={ativa:false,itens:null,iccs:null};salvar();atualizarInfoBase();
+  if(propagar&&typeof syncConfig==="function")syncConfig();
+}
+function cabecalhoCSV(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");}
+function linhaCSV(linha,sep){
+  const out=[];let atual="",aspas=false;
+  for(let i=0;i<linha.length;i++){
+    const c=linha[i];
+    if(c==='"'&&linha[i+1]==='"'&&aspas){atual+='"';i++;}
+    else if(c==='"')aspas=!aspas;
+    else if(c===sep&&!aspas){out.push(atual.trim());atual="";}
+    else atual+=c;
+  }
+  out.push(atual.trim());return out;
+}
+function numeroCSV(v){
+  let s=String(v??"").trim().replace(/R\$\s*/i,"").replace(/\s/g,"");
+  if(s.includes(","))s=s.replace(/\./g,"").replace(",",".");
+  const n=Number(s);return Number.isFinite(n)?n:0;
+}
+function prepararItemCSV(r){
+  const pegar=(...nomes)=>{for(const n of nomes)if(r[n]!==undefined&&r[n]!=="")return r[n];return "";};
+  const codigo=String(pegar("codigo","codigodapeca","peca","partnumber","partno")).trim().toUpperCase();
+  const local=String(pegar("local","locacao","endereco","localizacao")).trim().toUpperCase();
+  if(!codigo||!local)return null;
+  const m=local.match(/^([A-Z]\d{2})(\d{2})([A-Z])(\d{2})$/);
+  return {codigo,desc:String(pegar("descricao","desc","nomedapeca","produto")).trim(),local,
+    sistema:numeroCSV(pegar("quantidade","qtd","saldo","estoque","sistema")),
+    custo:numeroCSV(pegar("custo","custounitario","valor","valorunitario")),
+    icc:String(pegar("icc","classe","curva")).trim().toUpperCase()||"E",
+    un:String(pegar("unidade","un","und")).trim().toUpperCase()||"PC",
+    zona:m?m[1]:"ESPECIAL",guiavel:!!m,ordem:m?local:"ZZZ"+local,
+    corredor:m?m[2]:"",prat:m?m[3]:"",pos:m?m[4]:""};
+}
+function importarEstoqueCSV(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const texto=String(reader.result||"").replace(/^\uFEFF/,"");
+      const linhas=texto.split(/\r?\n/).filter(l=>l.trim());if(linhas.length<2)throw new Error("CSV vazio.");
+      const sep=(linhas[0].split(";").length>linhas[0].split(",").length)?";":",";
+      const headers=linhaCSV(linhas[0],sep).map(cabecalhoCSV);
+      const itens=linhas.slice(1).map(l=>{const vals=linhaCSV(l,sep),r={};headers.forEach((h,i)=>r[h]=vals[i]??"");return prepararItemCSV(r);}).filter(Boolean);
+      const unicos=[...new Map(itens.map(i=>[i.codigo+"|"+i.local,i])).values()];
+      if(!unicos.length)throw new Error("Não encontrei as colunas código e local.");
+      if(!confirm(`Carregar ${unicos.length} itens?\n\nAs contagens existentes não serão apagadas, mas todas as zonas serão bloqueadas para conferência.`))return;
+      aplicarBaseEstoque(unicos,true);atualizarPainel();alert(`✓ Estoque atualizado: ${unicos.length} itens.`);
+    }catch(e){alert("Não foi possível importar: "+e.message);}
+    input.value="";
+  };
+  reader.readAsText(f,"UTF-8");
+}
 
 // ── DECODIFICAR LOCAÇÃO ──
 function decodeLoc(it){
@@ -1281,6 +1358,7 @@ function resetarInventario(){if(confirm("⚠ Apagar TODAS as contagens?\n\nNão 
 // INIT
 carregar();
 (function(){const d=new Date();const dd=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});const elx=el("loginData");if(elx)elx.textContent="📅 "+dd.charAt(0).toUpperCase()+dd.slice(1);})();
+atualizarInfoBase();
 
 </script>
 
@@ -1372,7 +1450,7 @@ async function syncConfig(){
   if(!ONLINE) return;
   try{
     await sb.from("config").upsert({
-      sessao:SESSAO, modo:S.modo, selecao:S.selecao, atualizado_em:new Date().toISOString()
+      sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, atualizado_em:new Date().toISOString()
     });
   }catch(e){ console.log("sync config falhou:", e.message); }
 }
@@ -1390,7 +1468,10 @@ async function puxarTudo(){
     const {data:sols} = await sb.from("solicitacoes").select("*").eq("sessao",SESSAO);
     if(sols){ S.solicitacoes = sols.map(mapSolicitacaoDoBanco); }
     const {data:cfg} = await sb.from("config").select("*").eq("sessao",SESSAO).single();
-    if(cfg){ S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao; }
+    if(cfg){
+      S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao;
+      if(Array.isArray(cfg.itens)&&cfg.itens.length)aplicarBaseEstoque(cfg.itens,false);
+    }
     salvar();
     if(typeof atualizarPainel==="function") atualizarPainel();
     if(typeof carregarNav==="function" && S.perfilSel==="estoquista") carregarNav();
@@ -1439,7 +1520,8 @@ function escutarTempoReal(){
       })
     .on("postgres_changes", {event:"*", schema:"public", table:"config", filter:`sessao=eq.${SESSAO}`},
       payload=>{
-        if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao; salvar();
+        if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;
+          if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false); salvar();
           if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
     .subscribe();
