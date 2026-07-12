@@ -534,7 +534,10 @@ function aplicarBaseEstoque(novaBase,propagar=true){
   localStorage.setItem("jit_itens",JSON.stringify(ITENS));
   const libs={};ZONAS.forEach(z=>libs[z]=false);S.liberacoes=libs;
   S.selecao={ativa:false,itens:null,iccs:null};salvar();atualizarInfoBase();
-  if(propagar&&typeof syncConfig==="function")syncConfig();
+  if(propagar&&typeof syncConfig==="function"){
+    syncConfig();
+    if(typeof syncLiberacao==="function")ZONAS.forEach(z=>syncLiberacao(z,false));
+  }
 }
 function cabecalhoCSV(s){return s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");}
 function linhaCSV(linha,sep){
@@ -1180,7 +1183,7 @@ function gerarRecontagem(){
   if(divs.length===0){alert("Nenhuma divergência para recontar.");return;}
   // REABRE de fato: marca códigos divergentes para recontagem (saem do "já contado")
   divs.forEach(d=>S.recontar[d.codigo]=true);
-  salvar();
+  salvar();if(typeof syncConfig==="function")syncConfig();
   el("modalRecont").innerHTML=`<div style="margin-bottom:12px;font-weight:700;color:var(--red);">${divs.length} item(ns) liberados para recontagem cega:</div>`+
     divs.map((d,i)=>`<div style="padding:8px;background:var(--gray-bg);border-radius:6px;margin-bottom:6px;font-size:12px;">
       <b>${i+1}. ${d.codigo}</b> — ${d.desc}<br><span style="color:var(--gray-mid);">📍 ${d.local}</span></div>`).join("")+
@@ -1197,7 +1200,7 @@ function renderSolic(){
     <div style="font-size:12px;color:var(--gray-mid);margin:4px 0;">${s.codigo} · ${s.local} · ${s.usuario} · ${s.hora}</div>
     <button class="btn btn-green btn-sm" onclick="resolverSolic(${i})">✓ Resolver</button></div>`).join("");
 }
-function resolverSolic(i){S.solicitacoes.splice(i,1);salvar();renderSolic();}
+function resolverSolic(i){const s=S.solicitacoes[i];S.solicitacoes.splice(i,1);salvar();if(typeof removerSolicitacaoNuvem==="function")removerSolicitacaoNuvem(s);renderSolic();}
 
 function renderAtividade(){
   const rec=[...S.contagens].reverse().slice(0,30);
@@ -1364,7 +1367,13 @@ function restaurarBackup(input){
   input.value="";
 }
 
-function resetarInventario(){if(confirm("⚠ Apagar TODAS as contagens?\n\nNão pode ser desfeito.")){S.contagens=[];S.solicitacoes=[];salvar();atualizarPainel();alert("Inventário resetado.");}}
+async function resetarInventario(){
+  if(!confirm("⚠ Apagar TODAS as contagens deste inventário em TODOS os aparelhos?\n\nFaça um backup antes. Esta ação não pode ser desfeita."))return;
+  if(typeof resetarNuvem==="function"){
+    const ok=await resetarNuvem();if(!ok){alert("Não foi possível limpar o banco. O reset foi cancelado para evitar inconsistência.");return;}
+  }
+  S.contagens=[];S.solicitacoes=[];S.recontar={};ZONAS.forEach(z=>S.liberacoes[z]=false);salvar();atualizarPainel();alert("✓ Inventário resetado em todos os aparelhos.");
+}
 
 // INIT
 carregar();
@@ -1427,26 +1436,28 @@ function atualizarStatusConexao(on){
 async function syncContagem(c){
   if(!ONLINE) return;
   try{
-    await sb.from("contagens").insert({
+    const {data,error}=await sb.from("contagens").insert({
       sessao:SESSAO, codigo:c.codigo, desc:c.desc, local:c.local,
       local_cadastro:c.localCadastro||null, zona:c.zona,
       sistema:c.sistema, contado:c.contado, icc:c.icc, un:c.un,
       usuario:c.usuario, hora:c.hora, recontagem:!!c.recontagem,
       avaria:!!c.avaria, achado_outra_loc:!!c.achadoOutraLoc,
       foto:c.foto||null, foto_tipo:c.fotoTipo||null, modo:c.modo, bipado:!!c.bipado
-    });
+    }).select("id").single();
+    if(error)throw error;if(data)c.id=data.id;
   }catch(e){ console.log("sync contagem falhou (segue local):", e.message); }
 }
 
 async function syncSolicitacao(s){
   if(!ONLINE) return;
   try{
-    await sb.from("solicitacoes").insert({
+    const {data,error}=await sb.from("solicitacoes").insert({
       sessao:SESSAO, tipo:s.tipo, codigo:s.codigo||null, desc:s.desc||null,
       local:s.local||null, local_cadastro:s.localCadastro||null,
       local_achado:s.localAchado||null, qtd:s.qtd||null,
       usuario:s.usuario, hora:s.hora
-    });
+    }).select("id").single();
+    if(error)throw error;if(data)s.id=data.id;
   }catch(e){ console.log("sync solicitacao falhou:", e.message); }
 }
 
@@ -1458,12 +1469,13 @@ async function syncLiberacao(zona, liberada){
 }
 
 async function syncConfig(){
-  if(!ONLINE) return;
+  if(!ONLINE) return false;
   try{
-    await sb.from("config").upsert({
-      sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, atualizado_em:new Date().toISOString()
+    const {error}=await sb.from("config").upsert({
+      sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, recontar:S.recontar, atualizado_em:new Date().toISOString()
     });
-  }catch(e){ console.log("sync config falhou:", e.message); }
+    if(error)throw error;return true;
+  }catch(e){ console.log("sync config falhou:", e.message);return false; }
 }
 
 // ── PUXAR: carrega o estado atual da nuvem ao abrir ──
@@ -1480,7 +1492,7 @@ async function puxarTudo(){
     if(sols){ S.solicitacoes = sols.map(mapSolicitacaoDoBanco); }
     const {data:cfg} = await sb.from("config").select("*").eq("sessao",SESSAO).single();
     if(cfg){
-      S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao;
+      S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao; S.recontar=cfg.recontar||{};
       if(Array.isArray(cfg.itens)&&cfg.itens.length)aplicarBaseEstoque(cfg.itens,false);
     }
     salvar();
@@ -1491,7 +1503,7 @@ async function puxarTudo(){
 
 function mapContagemDoBanco(r){
   return {
-    codigo:r.codigo, desc:r.desc, local:r.local, localCadastro:r.local_cadastro,
+    id:r.id, codigo:r.codigo, desc:r.desc, local:r.local, localCadastro:r.local_cadastro,
     zona:r.zona, sistema:r.sistema, contado:r.contado, icc:r.icc, un:r.un,
     usuario:r.usuario, hora:r.hora, recontagem:r.recontagem, avaria:r.avaria,
     achadoOutraLoc:r.achado_outra_loc, foto:r.foto, fotoTipo:r.foto_tipo,
@@ -1500,7 +1512,7 @@ function mapContagemDoBanco(r){
 }
 function mapSolicitacaoDoBanco(r){
   return {
-    tipo:r.tipo, codigo:r.codigo, desc:r.desc, local:r.local,
+    id:r.id, tipo:r.tipo, codigo:r.codigo, desc:r.desc, local:r.local,
     localCadastro:r.local_cadastro, localAchado:r.local_achado, qtd:r.qtd,
     usuario:r.usuario, hora:r.hora
   };
@@ -1510,15 +1522,17 @@ function mapSolicitacaoDoBanco(r){
 function escutarTempoReal(){
   if(!ONLINE) return;
   sb.channel("jit_realtime")
-    .on("postgres_changes", {event:"INSERT", schema:"public", table:"contagens", filter:`sessao=eq.${SESSAO}`},
+    .on("postgres_changes", {event:"*", schema:"public", table:"contagens", filter:`sessao=eq.${SESSAO}`},
       payload=>{
+        if(payload.eventType==="DELETE"){S.contagens=S.contagens.filter(c=>c.id!==payload.old.id);salvar();if(typeof atualizarPainel==="function")atualizarPainel();return;}
         const nova = mapContagemDoBanco(payload.new);
         // evita duplicar o que este próprio aparelho acabou de gravar
         const existe = S.contagens.some(c=>c.codigo===nova.codigo && c.hora===nova.hora && c.usuario===nova.usuario && c.local===nova.local);
         if(!existe){ S.contagens.push(nova); salvar(); if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
-    .on("postgres_changes", {event:"INSERT", schema:"public", table:"solicitacoes", filter:`sessao=eq.${SESSAO}`},
+    .on("postgres_changes", {event:"*", schema:"public", table:"solicitacoes", filter:`sessao=eq.${SESSAO}`},
       payload=>{
+        if(payload.eventType==="DELETE"){S.solicitacoes=S.solicitacoes.filter(s=>s.id!==payload.old.id);salvar();if(typeof atualizarPainel==="function")atualizarPainel();return;}
         const nova = mapSolicitacaoDoBanco(payload.new);
         const existe = S.solicitacoes.some(s=>s.tipo===nova.tipo && s.hora===nova.hora && s.usuario===nova.usuario && s.codigo===nova.codigo);
         if(!existe){ S.solicitacoes.push(nova); salvar(); if(typeof atualizarPainel==="function") atualizarPainel(); }
@@ -1531,11 +1545,25 @@ function escutarTempoReal(){
       })
     .on("postgres_changes", {event:"*", schema:"public", table:"config", filter:`sessao=eq.${SESSAO}`},
       payload=>{
-        if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;
+        if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;S.recontar=payload.new.recontar||{};
           if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false); salvar();
           if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
     .subscribe();
+}
+
+async function removerSolicitacaoNuvem(s){
+  if(!ONLINE||!s)return;
+  try{let q=sb.from("solicitacoes").delete().eq("sessao",SESSAO);q=s.id?q.eq("id",s.id):q.eq("tipo",s.tipo).eq("usuario",s.usuario).eq("hora",s.hora);const {error}=await q;if(error)throw error;}catch(e){console.log("remover solicitação falhou:",e.message);}
+}
+async function resetarNuvem(){
+  if(!ONLINE)return false;
+  try{
+    let r=await sb.from("contagens").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
+    r=await sb.from("solicitacoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
+    r=await sb.from("liberacoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
+    S.recontar={};if(!await syncConfig())throw new Error("config não sincronizada");return true;
+  }catch(e){console.log("reset nuvem falhou:",e.message);return false;}
 }
 
 // Liga tudo quando a página carrega

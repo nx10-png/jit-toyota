@@ -56,6 +56,7 @@ create table if not exists public.config (
   modo text not null default 'atribuido',
   selecao jsonb not null default '{"ativa":false,"itens":null,"iccs":null}'::jsonb,
   itens jsonb,
+  recontar jsonb not null default '{}'::jsonb,
   atualizado_em timestamptz not null default now()
 );
 
