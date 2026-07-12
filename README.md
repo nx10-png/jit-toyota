@@ -6,12 +6,12 @@ Aplicativo web móvel para contagem cega de estoque, acompanhamento por zonas, d
 
 1. Abra o aplicativo e entre como líder.
 2. Acesse **Exportar > Base do estoque**.
-3. Carregue o CSV atualizado.
+3. Carregue o arquivo Excel (`.xlsx` ou `.xls`) atualizado. CSV também é aceito.
 4. Confira a quantidade de itens e zonas exibida na tela.
 5. Libere as zonas somente depois da conferência.
 6. Nos demais aparelhos, abra ou recarregue o aplicativo e entre como estoquista.
 
-O CSV aceita vírgula ou ponto e vírgula. Os nomes reconhecidos incluem:
+O sistema lê a primeira aba do Excel. CSV com vírgula ou ponto e vírgula também é aceito. Os nomes reconhecidos incluem:
 
 - `codigo`, `descricao`, `local`, `quantidade`, `custo`, `icc`, `unidade`;
 - alternativas comuns como `qtd`, `saldo`, `estoque`, `endereco`, `valor` e `un`.
