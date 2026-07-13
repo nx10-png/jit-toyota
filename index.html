@@ -4,6 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>Toyota — Sistema JIT v4 · Inventário</title>
+<meta name="theme-color" content="#111214"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="JIT Inventário"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="icon" href="logo-jit.svg" type="image/svg+xml"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
@@ -262,6 +268,19 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
 #sLogin .btn-red::after{content:"›";position:absolute;right:17px;top:50%;transform:translateY(-53%);font-size:21px;font-weight:300;opacity:.75;}
 #sLogin .btn-red:hover{filter:brightness(1.12);box-shadow:0 0 0 2px rgba(106,7,12,.8),0 10px 24px rgba(0,0,0,.5),0 0 18px rgba(204,0,0,.18),inset 0 1px rgba(255,255,255,.2);}
 @media(max-width:400px){#sLogin .login-hero .login-eyebrow{right:16px;top:16px;font-size:7px;padding:5px 8px}.login-logo-text{font-size:51px}.login-brand-name{font-size:11px}}
+.access-tools{display:flex;justify-content:center;gap:18px;margin:3px 0 12px;position:relative;z-index:2;}
+.access-tool{border:0;background:none;color:#aeb1b3;font:600 11px var(--font);cursor:pointer;padding:7px 2px;display:inline-flex;align-items:center;gap:6px;}
+.access-tool:hover{color:#fff;}
+.access-tool svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+.access-modal{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;}
+.access-modal.open{display:flex;}
+.access-modal-card{width:100%;max-width:330px;text-align:center;color:#fff;padding:25px;border-radius:14px;background:linear-gradient(145deg,#2c2e31,#121315);border:1px solid #6d7073;box-shadow:0 28px 80px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.12);}
+.access-modal-title{font-size:16px;font-weight:800;letter-spacing:.5px;}
+.access-modal-sub{font-size:12px;color:#b4b6b8;line-height:1.5;margin:7px 0 18px;}
+#qrAcesso{width:210px;min-height:210px;margin:0 auto 17px;padding:10px;background:#fff;border-radius:9px;display:grid;place-items:center;}
+#qrAcesso img,#qrAcesso canvas{max-width:100%;height:auto!important;}
+.access-url{font-size:10px;color:#8f9295;word-break:break-all;margin-bottom:15px;}
+.access-close{width:100%;padding:12px;border:1px solid #777;border-radius:6px;background:#26282a;color:#fff;font:700 12px var(--font);cursor:pointer;}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -311,6 +330,10 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
         <ol><li>Informe seu nome completo e entre como estoquista.</li><li>Aguarde o líder liberar sua zona.</li><li>Siga a localização indicada e registre a contagem sem consultar o saldo.</li><li>Use foto para avarias ou peças encontradas fora do lugar.</li></ol>
       </div>
     </details>
+    <div class="access-tools">
+      <button type="button" class="access-tool" onclick="abrirQrAcesso()"><svg viewBox="0 0 24 24"><path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6"/><path d="M7 7h3v3H7zM14 7h3v3h-3zM7 14h3v3H7zM14 14h3v3h-3z"/></svg>QR de acesso</button>
+      <button type="button" class="access-tool" id="btnInstalar" onclick="instalarAplicativo()"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>Instalar aplicativo</button>
+    </div>
     <div id="blocoSenha" style="display:none;margin-top:16px;">
       <div class="field"><label>Senha do Líder</label>
         <input type="password" id="iSenha" placeholder="••••" maxlength="6"/></div>
@@ -1587,6 +1610,16 @@ atualizarInfoBase();
 
 </script>
 
+<div class="access-modal" id="modalQrAcesso" onclick="if(event.target===this)fecharQrAcesso()">
+  <div class="access-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrAcessoTitulo">
+    <div class="access-modal-title" id="qrAcessoTitulo">Acesso ao JIT Inventário</div>
+    <div class="access-modal-sub">Aponte a câmera do celular para abrir o sistema.</div>
+    <div id="qrAcesso"></div>
+    <div class="access-url">nx10-png.github.io/jit-toyota/</div>
+    <button type="button" class="access-close" onclick="fecharQrAcesso()">Fechar</button>
+  </div>
+</div>
+
 <!-- ===== CAMADA DE SINCRONIZAÇÃO EM TEMPO REAL ===== -->
 <script>
 // ============================================================
@@ -1813,8 +1846,44 @@ async function resetarNuvem(){
   }catch(e){console.log("reset nuvem falhou:",e.message);return false;}
 }
 
+// Acesso por QR e instalação como aplicativo
+const URL_ACESSO = "https://nx10-png.github.io/jit-toyota/";
+let eventoInstalacao = null;
+
+function abrirQrAcesso(){
+  const area=el("qrAcesso");
+  area.innerHTML="";
+  new QRCode(area,{text:URL_ACESSO,width:190,height:190,colorDark:"#111111",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.H});
+  el("modalQrAcesso").classList.add("open");
+}
+function fecharQrAcesso(){el("modalQrAcesso").classList.remove("open");}
+
+window.addEventListener("beforeinstallprompt",event=>{
+  event.preventDefault();
+  eventoInstalacao=event;
+});
+window.addEventListener("appinstalled",()=>{
+  eventoInstalacao=null;
+  const b=el("btnInstalar");if(b)b.style.display="none";
+});
+async function instalarAplicativo(){
+  if(window.matchMedia("(display-mode: standalone)").matches){alert("O JIT Inventário já está instalado neste aparelho.");return;}
+  if(eventoInstalacao){
+    eventoInstalacao.prompt();
+    await eventoInstalacao.userChoice;
+    eventoInstalacao=null;
+    return;
+  }
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  alert(ios?"No iPhone: toque em Compartilhar e depois em ‘Adicionar à Tela de Início’.":"No navegador, abra o menu e escolha ‘Instalar aplicativo’ ou ‘Adicionar à tela inicial’.");
+}
+
 // Liga tudo quando a página carrega
-window.addEventListener("load", ()=> setTimeout(initSupabase, 500));
+window.addEventListener("load", ()=>{
+  setTimeout(initSupabase,500);
+  if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(e=>console.log("App instalável indisponível:",e.message));
+  if(window.matchMedia("(display-mode: standalone)").matches){const b=el("btnInstalar");if(b)b.style.display="none";}
+});
 
 </script>
 </body>
