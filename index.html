@@ -109,31 +109,32 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 .photo-preview{width:100%;border-radius:8px;margin-top:10px;display:none;}
 .photo-label{font-size:13px;color:var(--gray-mid);margin-top:8px;}
 .avaria-chip{display:inline-flex;align-items:center;gap:6px;background:var(--orange-bg);color:var(--orange);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;}
-#sLogin{padding-top:22px;max-width:480px;}
-#sLogin .login-hero{position:relative;text-align:left;padding:28px 26px 54px;border-radius:24px;background:linear-gradient(145deg,#171717 0%,#2A2A2A 64%,#6F0000 145%);color:#fff;overflow:hidden;box-shadow:0 18px 40px rgba(20,20,20,.22);}
-#sLogin .login-hero::before{content:"";position:absolute;width:190px;height:190px;border:35px solid rgba(255,255,255,.045);border-radius:50%;right:-75px;top:-80px;}
-#sLogin .login-hero::after{content:"";position:absolute;width:110px;height:5px;border-radius:10px;background:var(--red);left:26px;bottom:30px;}
-.login-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:20px;background:rgba(255,255,255,.1);font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:18px;}
-.login-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#50D07A;box-shadow:0 0 0 4px rgba(80,208,122,.12);}
+#sLogin{padding-top:18px;max-width:460px;}
+#sLogin .login-hero{position:relative;text-align:left;padding:31px 27px 48px;border-radius:22px;background:linear-gradient(145deg,#111 0%,#272727 72%,#490000 140%);color:#fff;overflow:hidden;box-shadow:0 16px 38px rgba(20,20,20,.2);}
+#sLogin .login-hero::before{content:"";position:absolute;width:150px;height:150px;border:1px solid rgba(255,255,255,.08);border-radius:50%;right:-35px;top:-62px;box-shadow:0 0 0 32px rgba(255,255,255,.025),0 0 0 64px rgba(255,255,255,.015);}
+#sLogin .login-hero::after{content:"";position:absolute;width:48px;height:4px;border-radius:10px;background:var(--red);left:27px;bottom:26px;}
+.login-eyebrow{display:none;}
 .login-brand{display:flex;align-items:center;position:relative;z-index:1;}
 .login-brand-copy{min-width:0;}
-.login-logo-text{display:flex;align-items:center;gap:6px;font-size:48px;font-weight:900;color:#fff;letter-spacing:3px;line-height:.92;}
-.login-logo-text .jit-i{display:inline-block;width:7px;height:43px;border-radius:3px;background:var(--red);transform:skew(-7deg);box-shadow:0 0 24px rgba(204,0,0,.35);font-size:0;}
-.login-brand-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.66);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;}
+.login-logo-text{display:flex;align-items:center;gap:4px;font-size:54px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:.88;}
+.login-logo-text .jit-i{display:inline-block;width:7px;height:46px;border-radius:1px;background:var(--red);transform:skew(-6deg);box-shadow:0 0 22px rgba(204,0,0,.3);font-size:0;margin:0 3px;}
+.login-brand-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.72);letter-spacing:1.8px;text-transform:uppercase;margin-top:12px;}
 .login-divider{display:none;}
-.login-sub{font-size:10px;color:rgba(255,255,255,.68);letter-spacing:1px;text-transform:uppercase;margin-top:8px;}
-#loginData{color:rgba(255,255,255,.72)!important;margin-top:15px!important;}
-#sLogin>.card{position:relative;margin:-24px 14px 0;border:1px solid rgba(0,0,0,.06);border-radius:20px;padding:23px;box-shadow:0 18px 44px rgba(35,35,35,.13);z-index:2;}
-#sLogin .card-title{font-size:10px;letter-spacing:1.4px;border-bottom:0;padding-bottom:0;margin-bottom:18px;color:var(--gray-mid);}
+.login-sub{display:none;}
+#loginData{color:rgba(255,255,255,.62)!important;margin-top:14px!important;font-weight:500!important;}
+#sLogin>.card{position:relative;margin:-20px 12px 0;border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:22px;box-shadow:0 16px 38px rgba(35,35,35,.12);z-index:2;}
+#sLogin .card-title{font-size:14px;letter-spacing:0;border-bottom:0;padding-bottom:0;margin-bottom:17px;color:var(--black);text-transform:none;}
 #sLogin .field input{background:#F8F8F8;border-color:#E1E1E1;padding:14px 15px;}
 #sLogin .profile-grid{gap:10px;}
-#sLogin .profile-card{padding:17px 10px;border:1.5px solid #E2E2E2;border-radius:13px;background:#FAFAFA;box-shadow:none;}
+#sLogin .profile-card{padding:14px 10px;border:1.5px solid #E2E2E2;border-radius:13px;background:#FAFAFA;box-shadow:none;}
 #sLogin .profile-card.sel{border-color:var(--red);background:linear-gradient(180deg,#FFF 0%,#FFF4F4 100%);box-shadow:0 7px 20px rgba(204,0,0,.09);}
-#sLogin .profile-icon{margin-bottom:9px;}
+#sLogin .profile-icon{margin-bottom:7px;}
 #sLogin .profile-name{font-size:13px;}
-#sLogin .profile-sub{font-size:10px;}
+#sLogin .profile-sub{display:none;}
 #sLogin .btn-red{background:linear-gradient(135deg,var(--red),var(--red-dark));box-shadow:0 10px 22px rgba(204,0,0,.22);}
-#sLogin .quick-guide{background:#FCFCFC;border-color:#E8E8E8;}
+#sLogin .quick-guide{background:transparent;border:0;margin-top:10px;}
+#sLogin .quick-guide summary{justify-content:center;padding:9px;color:var(--gray-mid);font-size:11px;}
+#sLogin .quick-guide summary::after{margin-left:7px;}
 .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
 .profile-card{background:#fff;border:2px solid var(--gray-light);border-radius:14px;padding:24px 12px;text-align:center;cursor:pointer;transition:all .2s;}
 .profile-card:active{transform:scale(.96);}
@@ -217,17 +218,17 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
   <div class="login-hero">
     <div class="login-eyebrow">Operação conectada</div>
     <div class="login-brand">
-      <div class="login-brand-copy"><div class="login-logo-text"><span>J</span><span class="jit-i">I</span><span>T</span></div><div class="login-brand-name">Inventário Pós‑Vendas</div></div>
+      <div class="login-brand-copy"><div class="login-logo-text"><span>J</span><span class="jit-i">I</span><span>T</span></div><div class="login-brand-name">Inventário</div></div>
     </div>
     <div class="login-divider"></div>
     <div class="login-sub">Controle de inventário · Just‑in‑Time</div>
     <div id="loginData" style="font-size:11px;color:var(--gray-mid);margin-top:6px;font-weight:600;"></div>
   </div>
   <div class="card ani">
-    <div class="card-title">Identificação</div>
-    <div class="field"><label>Nome Completo</label>
-      <input type="text" id="iNome" placeholder="Digite seu nome"/></div>
-    <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:6px;">Perfil de Acesso</label>
+    <div class="card-title">Acessar inventário</div>
+    <div class="field"><label>Seu nome</label>
+      <input type="text" id="iNome" placeholder="Nome completo"/></div>
+    <label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:6px;">Perfil</label>
     <div class="profile-grid">
       <div class="profile-card sel" id="pcEst" onclick="selPerfil('estoquista')">
         <div class="profile-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 12.5 16 7l11 5.5-11 5.5L5 12.5Z"/><path d="M8 14.5v9L16 28l8-4.5v-9M16 18v10"/><path d="M21 5h6v6"/><path d="m20 12 7-7"/></svg></div>
@@ -241,7 +242,7 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
       </div>
     </div>
     <details class="quick-guide">
-      <summary id="guiaTitulo">Orientações rápidas — Estoquista</summary>
+      <summary id="guiaTitulo">Como usar</summary>
       <div class="quick-guide-body" id="guiaConteudo">
         <ol><li>Informe seu nome completo e entre como estoquista.</li><li>Aguarde o líder liberar sua zona.</li><li>Siga a localização indicada e registre a contagem sem consultar o saldo.</li><li>Use foto para avarias ou peças encontradas fora do lugar.</li></ol>
       </div>
@@ -691,10 +692,10 @@ function selPerfil(p){
 function atualizarOrientacaoPerfil(p){
   const t=el("guiaTitulo"),c=el("guiaConteudo");if(!t||!c)return;
   if(p==="lider"){
-    t.textContent="Orientações rápidas — Líder";
+    t.textContent="Como usar";
     c.innerHTML='<ol><li>Entre com seu nome e a senha de líder.</li><li>Importe o Excel atualizado e confira o total de itens e zonas.</li><li>Faça um teste curto, resete os dados de teste e libere as zonas gradualmente.</li><li>Acompanhe divergências, recontagens e histórico; ao final, exporte relatórios e backup.</li></ol>';
   }else{
-    t.textContent="Orientações rápidas — Estoquista";
+    t.textContent="Como usar";
     c.innerHTML='<ol><li>Informe seu nome completo e entre como estoquista.</li><li>Aguarde o líder liberar sua zona.</li><li>Siga a localização indicada e registre a contagem sem consultar o saldo.</li><li>Use foto para avarias ou peças encontradas fora do lugar.</li></ol>';
   }
 }
