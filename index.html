@@ -126,6 +126,12 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 .quick-guide[open] summary::after{content:"−";}
 .quick-guide-body{padding:0 14px 13px;font-size:12px;color:var(--gray-dark);line-height:1.65;border-top:1px solid #EAEAEA;}
 .quick-guide-body ol{padding-left:18px;margin-top:9px;}
+.presence-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--gray-bg);}
+.presence-row:last-child{border-bottom:none;}
+.presence-dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px var(--green-bg);flex-shrink:0;}
+.presence-name{flex:1;font-size:13px;font-weight:700;}
+.presence-meta{font-size:10px;color:var(--gray-mid);}
+.presence-check{width:20px;height:20px;accent-color:var(--red);}
 .rank-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--gray-bg);}
 .rank-pos{font-size:18px;font-weight:900;width:28px;color:var(--gray-mid);}
 .rank-name{flex:1;font-weight:700;font-size:14px;}
@@ -366,19 +372,26 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
       <div class="card-title">Modo de Operação</div>
       <div class="mode-card sel" id="modeAtrib" onclick="selModo('atribuido')">
         <div class="mode-card-title">🎯 Atribuído (Controlado)</div>
-        <div class="mode-card-desc">O Líder libera zonas específicas. Estoquista só conta o que foi liberado. Máximo controle.</div>
+        <div class="mode-card-desc">O sistema identifica os estoquistas ativos e divide automaticamente a contagem em filas exclusivas e equilibradas.</div>
       </div>
-      <div class="mode-card" id="modeLivre" onclick="selModo('livre')">
+      <div class="mode-card" id="modeLivre" onclick="selModo('livre')" style="display:none;">
         <div class="mode-card-title">🔓 Livre com Registro</div>
         <div class="mode-card-desc">Estoquista busca e conta qualquer item. Tudo auditado. Ideal para contagem cíclica.</div>
       </div>
     </div>
     <div class="card ani">
-      <div class="card-title">Liberação de Zonas</div>
-      <div id="alertLib" class="alert alert-info show">ℹ Ative as zonas para liberar a contagem.</div>
+      <div class="card-title">👥 Equipe ativa <span id="bdgAtivos" class="badge badge-green">0</span></div>
+      <div id="distStatus" class="alert alert-info show">Os estoquistas devem entrar primeiro. Depois, selecione os participantes e distribua.</div>
+      <div id="presencasView"><div style="text-align:center;color:var(--gray-mid);padding:12px;font-size:12px;">Aguardando participantes...</div></div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-outline" onclick="buscarPresencasAtivas()">↻ ATUALIZAR</button>
+        <button class="btn btn-green" onclick="distribuirAutomaticamente()">⚡ DISTRIBUIR</button>
+      </div>
+    </div>
+    <div class="card ani">
+      <div class="card-title">Cobertura automática de zonas</div>
+      <div id="alertLib" class="alert alert-info show">As zonas serão liberadas automaticamente após a distribuição das filas.</div>
       <div class="lib-grid" id="libGrid"></div>
-      <button class="btn btn-green" onclick="liberarTodos()">✓ LIBERAR TODAS</button>
-      <button class="btn btn-red" onclick="bloquearTodos()">🔒 BLOQUEAR TODAS</button>
     </div>
     <div class="card ani" id="cardSolic" style="display:none;">
       <div class="card-title">⚠ Solicitações de Recontagem <span id="bdgSolic" class="badge badge-yellow">0</span></div>
@@ -533,11 +546,16 @@ let S = {
   selecao:{ativa:false, itens:null, iccs:null},
   baseAtualizadaEm:null,
   baseAtualizadaPor:null,
+  distribuicaoAtiva:false,
+  distribuidoEm:null,
+  distribuidoPor:null,
+  atribuicoes:[],
+  presencas:[],
 };
 ZONAS.forEach(z=>S.liberacoes[z]=false);
 
-function salvar(){try{localStorage.setItem("jit_v4",JSON.stringify({contagens:S.contagens,liberacoes:S.liberacoes,modo:S.modo,solicitacoes:S.solicitacoes,recontar:S.recontar,selecao:S.selecao,baseAtualizadaEm:S.baseAtualizadaEm,baseAtualizadaPor:S.baseAtualizadaPor}));}catch(e){}}
-function carregar(){try{const d=JSON.parse(localStorage.getItem("jit_v4")||"{}");S.contagens=d.contagens||[];S.liberacoes=d.liberacoes||{};ZONAS.forEach(z=>{if(!(z in S.liberacoes))S.liberacoes[z]=false;});S.modo=d.modo||"atribuido";S.solicitacoes=d.solicitacoes||[];S.recontar=d.recontar||{};S.selecao=d.selecao||{ativa:false,itens:null,iccs:null};S.baseAtualizadaEm=d.baseAtualizadaEm||null;S.baseAtualizadaPor=d.baseAtualizadaPor||null;}catch(e){}}
+function salvar(){try{localStorage.setItem("jit_v4",JSON.stringify({contagens:S.contagens,liberacoes:S.liberacoes,modo:S.modo,solicitacoes:S.solicitacoes,recontar:S.recontar,selecao:S.selecao,baseAtualizadaEm:S.baseAtualizadaEm,baseAtualizadaPor:S.baseAtualizadaPor,distribuicaoAtiva:S.distribuicaoAtiva,distribuidoEm:S.distribuidoEm,distribuidoPor:S.distribuidoPor,atribuicoes:S.atribuicoes}));}catch(e){}}
+function carregar(){try{const d=JSON.parse(localStorage.getItem("jit_v4")||"{}");S.contagens=d.contagens||[];S.liberacoes=d.liberacoes||{};ZONAS.forEach(z=>{if(!(z in S.liberacoes))S.liberacoes[z]=false;});S.modo=d.modo||"atribuido";S.solicitacoes=d.solicitacoes||[];S.recontar=d.recontar||{};S.selecao=d.selecao||{ativa:false,itens:null,iccs:null};S.baseAtualizadaEm=d.baseAtualizadaEm||null;S.baseAtualizadaPor=d.baseAtualizadaPor||null;S.distribuicaoAtiva=!!d.distribuicaoAtiva;S.distribuidoEm=d.distribuidoEm||null;S.distribuidoPor=d.distribuidoPor||null;S.atribuicoes=d.atribuicoes||[];}catch(e){}}
 
 function ts(){return new Date().toLocaleString("pt-BR");}
 function hora(){return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
@@ -560,6 +578,8 @@ function aplicarBaseEstoque(novaBase,propagar=true,meta=null){
   const libs={};ZONAS.forEach(z=>libs[z]=false);S.liberacoes=libs;
   S.selecao={ativa:false,itens:null,iccs:null};salvar();atualizarInfoBase();
   if(propagar&&typeof syncConfig==="function"){
+    S.distribuicaoAtiva=false;S.distribuidoEm=null;S.distribuidoPor=null;S.atribuicoes=[];
+    if(typeof invalidarDistribuicaoNuvem==="function")invalidarDistribuicaoNuvem();
     syncConfig();
     if(typeof syncLiberacao==="function")ZONAS.forEach(z=>syncLiberacao(z,false));
   }
@@ -739,12 +759,12 @@ function aplicarSelecao(){
     S.selecao={ativa:true,itens:itens.length?itens:null,iccs:iccs.length?iccs:null};
     alert("✓ Seleção aplicada.\n\nO estoquista contará apenas o que foi selecionado.");
   }
-  salvar();if(typeof syncConfig==="function")syncConfig();updateSelBadge();
+  invalidarDistribuicaoPorMudanca();salvar();if(typeof syncConfig==="function")syncConfig();updateSelBadge();
 }
 function limparSelecao(){
   selTmp.iccs.clear();selTmp.itens.clear();
   S.selecao={ativa:false,itens:null,iccs:null};
-  salvar();if(typeof syncConfig==="function")syncConfig();renderSelecao();
+  invalidarDistribuicaoPorMudanca();salvar();if(typeof syncConfig==="function")syncConfig();renderSelecao();
   alert("Seleção limpa. Contará tudo das zonas liberadas.");
 }
 
@@ -761,21 +781,72 @@ function filtroSelecao(it){
   }
   return true;
 }
+function invalidarDistribuicaoPorMudanca(){
+  if(!S.distribuicaoAtiva)return;S.distribuicaoAtiva=false;S.distribuidoEm=null;S.distribuidoPor=null;S.atribuicoes=[];
+  if(typeof invalidarDistribuicaoNuvem==="function")invalidarDistribuicaoNuvem();
+}
 
-function iniciarEstoquista(){
+let participantesSelecionados=new Set();
+function obterDispositivoId(){
+  let id=localStorage.getItem("jit_device_id");
+  if(!id){id=(crypto.randomUUID?crypto.randomUUID():"dev-"+Date.now()+"-"+Math.random().toString(36).slice(2));localStorage.setItem("jit_device_id",id);}
+  return id;
+}
+function escHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+async function buscarPresencasAtivas(){
+  if(typeof carregarPresencasNuvem!=="function")return;
+  const lista=await carregarPresencasNuvem();S.presencas=lista||[];
+  const nomesNovos=new Set(S.presencas.map(p=>p.usuario));
+  if(!participantesSelecionados.size)nomesNovos.forEach(n=>participantesSelecionados.add(n));
+  else [...participantesSelecionados].forEach(n=>{if(!nomesNovos.has(n))participantesSelecionados.delete(n);});
+  renderPresencas();
+}
+function toggleParticipante(nome,marcado){if(marcado)participantesSelecionados.add(nome);else participantesSelecionados.delete(nome);renderPresencas();}
+function renderPresencas(){
+  const lista=S.presencas||[];el("bdgAtivos").textContent=lista.length;
+  el("presencasView").innerHTML=lista.length?lista.map(p=>`<label class="presence-row"><input class="presence-check" type="checkbox" data-user="${encodeURIComponent(p.usuario)}" ${participantesSelecionados.has(p.usuario)?"checked":""} onchange="toggleParticipante(decodeURIComponent(this.dataset.user),this.checked)"><span class="presence-dot"></span><span class="presence-name">${escHtml(p.usuario)}<span class="presence-meta"><br>Ativo agora · ${p.itens_atribuidos||0} itens atribuídos</span></span></label>`).join(""):'<div style="text-align:center;color:var(--gray-mid);padding:12px;font-size:12px;">Nenhum estoquista ativo nos últimos 2 minutos.</div>';
+  const ds=el("distStatus");
+  if(S.distribuicaoAtiva){const q=S.distribuidoEm?new Date(S.distribuidoEm).toLocaleString("pt-BR"):"";ds.className="alert alert-success show";ds.textContent=`✓ Distribuição ativa${q?" desde "+q:""}${S.distribuidoPor?" · por "+S.distribuidoPor:""}.`;}
+  else{ds.className="alert alert-info show";ds.textContent=`${participantesSelecionados.size} participante(s) selecionado(s). Confirme e distribua a contagem.`;}
+}
+function montarDistribuicao(nomes){
+  const contados=new Set(S.contagens.filter(c=>!c.achadoOutraLoc).map(c=>c.codigo+"|"+(c.localCadastro||c.local)));
+  const itens=ITENS.filter(filtroSelecao).filter(i=>!contados.has(i.codigo+"|"+i.local)).sort((a,b)=>a.ordem.localeCompare(b.ordem));
+  const pesos=itens.map(i=>i.zona==="ESPECIAL"?1.25:1),total=pesos.reduce((a,b)=>a+b,0),meta=total/nomes.length;let pesoNoBloco=0,idxPessoa=0;
+  return itens.map((it,i)=>{
+    const peso=pesos[i];if(idxPessoa<nomes.length-1&&pesoNoBloco>0&&pesoNoBloco+peso>meta){idxPessoa++;pesoNoBloco=0;}
+    const pessoa=nomes[idxPessoa];pesoNoBloco+=peso;
+    return {codigo:it.codigo,local:it.local,usuario:pessoa,ordem:it.ordem,peso};
+  });
+}
+async function distribuirAutomaticamente(){
+  await buscarPresencasAtivas();const nomes=[...participantesSelecionados].filter(n=>S.presencas.some(p=>p.usuario===n));
+  if(!nomes.length){alert("Nenhum estoquista ativo selecionado. Peça para a equipe entrar no sistema primeiro.");return;}
+  const atribuicoes=montarDistribuicao(nomes);if(!atribuicoes.length){alert("Não há itens pendentes para distribuir.");return;}
+  const resumo=nomes.map(n=>`${n}: ${atribuicoes.filter(a=>a.usuario===n).length} itens`).join("\n");
+  if(!confirm(`Distribuir ${atribuicoes.length} itens entre ${nomes.length} participantes?\n\n${resumo}\n\nEsta ação substitui a distribuição anterior dos itens ainda pendentes.`))return;
+  const ok=typeof salvarDistribuicaoNuvem==="function"&&await salvarDistribuicaoNuvem(atribuicoes);
+  if(!ok){alert("A distribuição não foi salva. Nenhuma fila foi liberada.");return;}
+  salvar();await buscarPresencasAtivas();atualizarPainel();alert("✓ Distribuição liberada. Cada estoquista recebeu uma fila exclusiva.");
+}
+
+async function iniciarEstoquista(){
+  if(typeof registrarPresencaNuvem==="function")await registrarPresencaNuvem();
+  if(typeof carregarAtribuicoesUsuario==="function")S.atribuicoes=await carregarAtribuicoesUsuario(S.usuario);
   // "Já contado" considera recontagem: itens marcados para recontar voltam à fila
   const jaContados = new Set(
     S.contagens.filter(c=>!c.recontagem).map(c=>c.codigo)
       .filter(cod=>!S.recontar[cod])
   );
+  const meus=new Set((S.atribuicoes||[]).filter(a=>a.usuario===S.usuario).map(a=>a.codigo+"|"+a.local));
   S.fila = ITENS
-    .filter(i=>S.liberacoes[i.zona] && !jaContados.has(i.codigo))
+    .filter(i=>S.distribuicaoAtiva && meus.has(i.codigo+"|"+i.local) && !jaContados.has(i.codigo))
     .filter(i=>filtroSelecao(i))   // aplica seleção do Líder
     .sort((a,b)=>a.ordem.localeCompare(b.ordem));
 
   if(S.fila.length===0 && S.modo==="atribuido"){
     el("hdrTitle").textContent="AGUARDANDO";
-    el("aguardoZona").innerHTML=`<b>${S.usuario}</b> · Nenhum item liberado para você ainda`;
+    el("aguardoZona").innerHTML=`<b>${S.usuario}</b> · Você está ativo. Aguarde o líder liberar sua distribuição individual.`;
     mostrarTela("sAguardo");
     return;
   }
@@ -787,21 +858,21 @@ function iniciarEstoquista(){
   carregarNav();
 }
 
-function verificarLiberacao(){
-  carregar();
-  const temLiberada = ZONAS.some(z=>S.liberacoes[z]);
-  if(temLiberada) iniciarEstoquista();
-  else el("aguardoZona").innerHTML+=" · <span style='color:var(--red)'>Ainda bloqueado ⏳</span>";
+async function verificarLiberacao(){
+  if(typeof puxarTudo==="function")await puxarTudo();
+  if(!S.distribuicaoAtiva)el("aguardoZona").innerHTML=`<b>${S.usuario}</b> · Você está ativo. Distribuição ainda não liberada pelo líder ⏳`;
 }
 
 function mostrarTela(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));el(id).classList.add("active");}
 
-function voltarLogin(){
+async function voltarLogin(){
+  if(S.funcao==="estoquista"&&typeof desativarPresencaNuvem==="function")await desativarPresencaNuvem();
   el("hdrUser").textContent="";el("hdrTitle").textContent="INVENTÁRIO JIT";
   el("iNome").value="";el("iSenha").value="";el("alertSenhaErro").classList.remove("show");
   el("cardNav").style.display="";el("cardItem").style.display="none";el("cardFim").style.display="none";
   selPerfil("estoquista");
   fecharScanner();
+  S.funcao=null;S.usuario="";
   mostrarTela("sLogin");
 }
 
@@ -1120,6 +1191,7 @@ function atualizarPainel(){
   renderLib();renderKPIs();renderSetores();renderICC();
   renderDiverg();renderAvarias();renderAchados();renderAtividade();renderReinc();renderRanking();
   renderSolic();renderFechar();renderResumo();
+  if(el("presencasView"))renderPresencas();
 }
 
 function renderKPIs(){
@@ -1515,7 +1587,9 @@ async function syncConfig(){
   try{
     const {error}=await sb.from("config").upsert({
       sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, recontar:S.recontar,
-      estoque_atualizado_em:S.baseAtualizadaEm, estoque_atualizado_por:S.baseAtualizadaPor, atualizado_em:new Date().toISOString()
+      estoque_atualizado_em:S.baseAtualizadaEm, estoque_atualizado_por:S.baseAtualizadaPor,
+      distribuicao_ativa:S.distribuicaoAtiva, distribuido_em:S.distribuidoEm, distribuido_por:S.distribuidoPor,
+      atualizado_em:new Date().toISOString()
     });
     if(error)throw error;return true;
   }catch(e){ console.log("sync config falhou:", e.message);return false; }
@@ -1536,11 +1610,13 @@ async function puxarTudo(){
     const {data:cfg} = await sb.from("config").select("*").eq("sessao",SESSAO).single();
     if(cfg){
       S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao; S.recontar=cfg.recontar||{};
+      S.distribuicaoAtiva=!!cfg.distribuicao_ativa;S.distribuidoEm=cfg.distribuido_em||null;S.distribuidoPor=cfg.distribuido_por||null;
       if(Array.isArray(cfg.itens)&&cfg.itens.length)aplicarBaseEstoque(cfg.itens,false,{em:cfg.estoque_atualizado_em,por:cfg.estoque_atualizado_por});
     }
     salvar();
     if(typeof atualizarPainel==="function") atualizarPainel();
-    if(typeof carregarNav==="function" && S.perfilSel==="estoquista") carregarNav();
+    if(S.funcao==="lider")buscarPresencasAtivas();
+    if(S.funcao==="estoquista"){await registrarPresencaNuvem();await iniciarEstoquista();}
   }catch(e){ console.log("puxarTudo falhou:", e.message); }
 }
 
@@ -1589,9 +1665,13 @@ function escutarTempoReal(){
     .on("postgres_changes", {event:"*", schema:"public", table:"config", filter:`sessao=eq.${SESSAO}`},
       payload=>{
         if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;S.recontar=payload.new.recontar||{};
+          const antes=S.distribuicaoAtiva;S.distribuicaoAtiva=!!payload.new.distribuicao_ativa;S.distribuidoEm=payload.new.distribuido_em||null;S.distribuidoPor=payload.new.distribuido_por||null;
           if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false,{em:payload.new.estoque_atualizado_em,por:payload.new.estoque_atualizado_por}); salvar();
+          if(S.funcao==="estoquista"&&(!antes||S.distribuicaoAtiva))iniciarEstoquista();
           if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
+    .on("postgres_changes", {event:"*", schema:"public", table:"presencas", filter:`sessao=eq.${SESSAO}`},
+      ()=>{if(S.funcao==="lider")buscarPresencasAtivas();})
     .subscribe();
 }
 
@@ -1599,13 +1679,58 @@ async function removerSolicitacaoNuvem(s){
   if(!ONLINE||!s)return;
   try{let q=sb.from("solicitacoes").delete().eq("sessao",SESSAO);q=s.id?q.eq("id",s.id):q.eq("tipo",s.tipo).eq("usuario",s.usuario).eq("hora",s.hora);const {error}=await q;if(error)throw error;}catch(e){console.log("remover solicitação falhou:",e.message);}
 }
+let presencaTimer=null;
+async function registrarPresencaNuvem(){
+  if(!ONLINE||S.funcao!=="estoquista")return false;
+  try{
+    const {error}=await sb.from("presencas").upsert({sessao:SESSAO,usuario:S.usuario,dispositivo_id:obterDispositivoId(),ativo:true,ultimo_ping:new Date().toISOString()},{onConflict:"sessao,usuario"});
+    if(error)throw error;
+    if(!presencaTimer)presencaTimer=setInterval(()=>registrarPresencaNuvem(),30000);return true;
+  }catch(e){console.log("presença falhou:",e.message);return false;}
+}
+async function desativarPresencaNuvem(){
+  if(presencaTimer){clearInterval(presencaTimer);presencaTimer=null;}
+  if(!ONLINE||!S.usuario)return;
+  try{await sb.from("presencas").update({ativo:false,ultimo_ping:new Date().toISOString()}).eq("sessao",SESSAO).eq("usuario",S.usuario);}catch(e){}
+}
+async function carregarPresencasNuvem(){
+  if(!ONLINE)return [];
+  try{
+    const limite=new Date(Date.now()-120000).toISOString();
+    const [{data:p,error:e1},{data:a,error:e2}]=await Promise.all([
+      sb.from("presencas").select("usuario,ultimo_ping").eq("sessao",SESSAO).eq("ativo",true).gte("ultimo_ping",limite).order("usuario"),
+      sb.from("atribuicoes").select("usuario").eq("sessao",SESSAO)
+    ]);if(e1)throw e1;if(e2)throw e2;
+    const cont={};(a||[]).forEach(x=>cont[x.usuario]=(cont[x.usuario]||0)+1);
+    return (p||[]).map(x=>({...x,itens_atribuidos:cont[x.usuario]||0}));
+  }catch(e){console.log("buscar presenças falhou:",e.message);return [];}
+}
+async function carregarAtribuicoesUsuario(usuario){
+  if(!ONLINE)return S.atribuicoes||[];
+  try{const {data,error}=await sb.from("atribuicoes").select("codigo,local,usuario,ordem,peso").eq("sessao",SESSAO).eq("usuario",usuario).order("ordem");if(error)throw error;return data||[];}catch(e){console.log("buscar atribuições falhou:",e.message);return S.atribuicoes||[];}
+}
+async function invalidarDistribuicaoNuvem(){
+  if(!ONLINE)return false;
+  try{const {error}=await sb.from("atribuicoes").delete().eq("sessao",SESSAO);if(error)throw error;return true;}catch(e){console.log("invalidar distribuição falhou:",e.message);return false;}
+}
+async function salvarDistribuicaoNuvem(lista){
+  if(!ONLINE)return false;
+  try{
+    let r=await sb.from("atribuicoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
+    for(let i=0;i<lista.length;i+=400){r=await sb.from("atribuicoes").insert(lista.slice(i,i+400).map(a=>({sessao:SESSAO,...a})));if(r.error)throw r.error;}
+    S.distribuicaoAtiva=true;S.distribuidoEm=new Date().toISOString();S.distribuidoPor=S.usuario;
+    ZONAS.forEach(z=>S.liberacoes[z]=true);await Promise.all(ZONAS.map(z=>syncLiberacao(z,true)));
+    if(!await syncConfig())throw new Error("configuração não sincronizada");return true;
+  }catch(e){console.log("salvar distribuição falhou:",e.message);S.distribuicaoAtiva=false;return false;}
+}
 async function resetarNuvem(){
   if(!ONLINE)return false;
   try{
     let r=await sb.from("contagens").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
     r=await sb.from("solicitacoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
     r=await sb.from("liberacoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
-    S.recontar={};if(!await syncConfig())throw new Error("config não sincronizada");return true;
+    r=await sb.from("atribuicoes").delete().eq("sessao",SESSAO);if(r.error)throw r.error;
+    S.recontar={};S.distribuicaoAtiva=false;S.distribuidoEm=null;S.distribuidoPor=null;S.atribuicoes=[];if(!await syncConfig())throw new Error("config não sincronizada");return true;
   }catch(e){console.log("reset nuvem falhou:",e.message);return false;}
 }
 
