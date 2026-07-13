@@ -1623,18 +1623,9 @@ function initSupabase(){
   }
 }
 
-// ── Indicador visual de conexão (cria um selo no topo) ──
+// Mantém o estado de conexão sem exibir informação técnica na interface.
 function atualizarStatusConexao(on){
-  let selo = document.getElementById("statusConexao");
-  if(!selo){
-    selo = document.createElement("div");
-    selo.id = "statusConexao";
-    selo.style.cssText = "position:fixed;top:8px;right:8px;z-index:9999;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;";
-    document.body.appendChild(selo);
-  }
-  selo.textContent = on ? "🟢 Online — tempo real" : "⚪ Offline (local)";
-  selo.style.background = on ? "#e6f4ea" : "#f0f0f0";
-  selo.style.color = on ? "#1e7e34" : "#666";
+  document.getElementById("statusConexao")?.remove();
 }
 
 // ── ENVIAR: chamado sempre que algo é gravado localmente ──
