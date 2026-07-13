@@ -579,6 +579,7 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
       <div style="height:1px;background:var(--gray-light);margin:14px 0;"></div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:8px;">📦 Base do estoque</div>
       <div id="baseEstoqueInfo" class="alert alert-info show">Carregando base...</div>
+      <div id="baseEstoqueAlertas" class="alert alert-warn" style="white-space:pre-line;align-items:flex-start;"></div>
       <label class="btn btn-green" style="cursor:pointer;text-align:center;">
         📤 CARREGAR ESTOQUE ATUALIZADO (EXCEL OU CSV)
         <input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" style="display:none;" onchange="importarEstoqueCSV(this)"/>
@@ -682,6 +683,32 @@ function atualizarInfoBase(){
     const quem=S.baseAtualizadaPor?` · por ${S.baseAtualizadaPor}`:"";
     x.textContent=`✓ ${ITENS.length.toLocaleString("pt-BR")} itens · ${ZONAS.length} zonas · Atualização: ${quando}${quem}`;
   }
+  atualizarAlertasBase();
+}
+function itemSemLocacao(i){
+  const l=String(i?.local||"").trim().toUpperCase().replace(/[.\s-]/g,"");
+  return !!i?.semLocal||!l||["SL","S/L","SEMLOCAL","SEMLOCACAO"].includes(l);
+}
+function avaliarBaseEstoque(lista){
+  const semLocal=lista.filter(itemSemLocacao);
+  const porLocal=new Map();
+  lista.filter(i=>!itemSemLocacao(i)).forEach(i=>{
+    const local=String(i.local).trim().toUpperCase();
+    if(!porLocal.has(local))porLocal.set(local,new Set());
+    porLocal.get(local).add(String(i.codigo).trim().toUpperCase());
+  });
+  const compartilhadas=[...porLocal.entries()].filter(([,codigos])=>codigos.size>1).sort((a,b)=>b[1].size-a[1].size);
+  return {semLocal,compartilhadas};
+}
+function atualizarAlertasBase(){
+  const x=el("baseEstoqueAlertas");if(!x)return;
+  const a=avaliarBaseEstoque(ITENS),linhas=[];
+  if(a.semLocal.length)linhas.push(`⚠ ${a.semLocal.length} item(ns) sem locação definida (SL).`);
+  if(a.compartilhadas.length){
+    const ex=a.compartilhadas.slice(0,3).map(([l,c])=>`${l}: ${c.size} itens`).join(" · ");
+    linhas.push(`⚠ ${a.compartilhadas.length} locação(ões) possuem itens diferentes.${ex?`\nExemplos: ${ex}`:""}`);
+  }
+  x.textContent=linhas.join("\n");x.classList.toggle("show",linhas.length>0);
 }
 function aplicarBaseEstoque(novaBase,propagar=true,meta=null){
   if(!Array.isArray(novaBase)||!novaBase.length)throw new Error("A base não contém itens válidos.");
@@ -717,16 +744,18 @@ function numeroCSV(v){
 }
 function prepararItemCSV(r){
   const pegar=(...nomes)=>{for(const n of nomes)if(r[n]!==undefined&&r[n]!=="")return r[n];return "";};
-  const codigo=String(pegar("codigo","codigodapeca","peca","partnumber","partno")).trim().toUpperCase();
-  const local=String(pegar("local","locacao","endereco","localizacao")).trim().toUpperCase();
-  if(!codigo||!local)return null;
+  const codigo=String(pegar("codigo","codigodapeca","coditem","peca","partnumber","partno")).trim().toUpperCase();
+  const localOriginal=String(pegar("local","locacao","endereco","localizacao")).trim().toUpperCase();
+  if(!codigo)return null;
+  const semLocal=!localOriginal||["SL","S/L","SEM LOCAL","SEM LOCACAO","SEM LOCAÇÃO"].includes(localOriginal);
+  const local=semLocal?"SL":localOriginal;
   const m=local.match(/^([A-Z]\d{2})(\d{2})([A-Z])(\d{2})$/);
   return {codigo,desc:String(pegar("descricao","desc","nomedapeca","produto")).trim(),local,
     sistema:numeroCSV(pegar("quantidade","qtd","saldo","estoque","sistema")),
-    custo:numeroCSV(pegar("custo","custounitario","valor","valorunitario")),
+    custo:numeroCSV(pegar("custo","precodecusto","custounitario","valor","valorunitario")),
     icc:String(pegar("icc","classe","curva")).trim().toUpperCase()||"E",
     un:String(pegar("unidade","un","und")).trim().toUpperCase()||"PC",
-    zona:m?m[1]:"ESPECIAL",guiavel:!!m,ordem:m?local:"ZZZ"+local,
+    semLocal,zona:m?m[1]:"ESPECIAL",guiavel:!!m,ordem:m?local:"ZZZ"+local,
     corredor:m?m[2]:"",prat:m?m[3]:"",pos:m?m[4]:""};
 }
 function importarEstoqueCSV(input){
@@ -747,11 +776,19 @@ function importarEstoqueCSV(input){
         matriz=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false}).filter(l=>l.some(v=>String(v).trim()));
       }
       if(matriz.length<2)throw new Error("A planilha está vazia.");
+      const codigosAceitos=new Set(["codigo","codigodapeca","coditem","peca","partnumber","partno"]);
+      const locaisAceitos=new Set(["local","locacao","endereco","localizacao"]);
+      const linhaCabecalho=matriz.findIndex(l=>{const h=l.map(v=>cabecalhoCSV(String(v)));return h.some(x=>codigosAceitos.has(x))&&h.some(x=>locaisAceitos.has(x));});
+      if(linhaCabecalho<0)throw new Error("Não encontrei as colunas código e locação.");
+      matriz=matriz.slice(linhaCabecalho);
       const headers=matriz[0].map(v=>cabecalhoCSV(String(v)));
       const itens=matriz.slice(1).map(vals=>{const r={};headers.forEach((h,i)=>r[h]=vals[i]??"");return prepararItemCSV(r);}).filter(Boolean);
       const unicos=[...new Map(itens.map(i=>[i.codigo+"|"+i.local,i])).values()];
       if(!unicos.length)throw new Error("Não encontrei as colunas código e local.");
-      if(!confirm(`Carregar ${unicos.length} itens?\n\nAs contagens existentes não serão apagadas, mas todas as zonas serão bloqueadas para conferência.`))return;
+      const avisos=avaliarBaseEstoque(unicos),resumo=[];
+      if(avisos.semLocal.length)resumo.push(`⚠ ${avisos.semLocal.length} item(ns) sem locação (SL)`);
+      if(avisos.compartilhadas.length)resumo.push(`⚠ ${avisos.compartilhadas.length} locação(ões) com itens diferentes`);
+      if(!confirm(`Carregar ${unicos.length} itens?${resumo.length?`\n\nCONFERÊNCIA:\n${resumo.join("\n")}`:"\n\n✓ Nenhuma pendência de locação identificada."}\n\nAs contagens existentes não serão apagadas, mas todas as zonas serão bloqueadas para conferência.`))return;
       aplicarBaseEstoque(unicos,true,{em:new Date().toISOString(),por:S.usuario||"Líder"});atualizarPainel();alert(`✓ Estoque atualizado: ${unicos.length} itens.`);
     }catch(e){alert("Não foi possível importar: "+e.message);}
     input.value="";
