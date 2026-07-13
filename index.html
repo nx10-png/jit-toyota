@@ -531,11 +531,13 @@ let S = {
   contagens:[], liberacoes:{}, solicitacoes:[],
   recontar:{},
   selecao:{ativa:false, itens:null, iccs:null},
+  baseAtualizadaEm:null,
+  baseAtualizadaPor:null,
 };
 ZONAS.forEach(z=>S.liberacoes[z]=false);
 
-function salvar(){try{localStorage.setItem("jit_v4",JSON.stringify({contagens:S.contagens,liberacoes:S.liberacoes,modo:S.modo,solicitacoes:S.solicitacoes,recontar:S.recontar,selecao:S.selecao}));}catch(e){}}
-function carregar(){try{const d=JSON.parse(localStorage.getItem("jit_v4")||"{}");S.contagens=d.contagens||[];S.liberacoes=d.liberacoes||{};ZONAS.forEach(z=>{if(!(z in S.liberacoes))S.liberacoes[z]=false;});S.modo=d.modo||"atribuido";S.solicitacoes=d.solicitacoes||[];S.recontar=d.recontar||{};S.selecao=d.selecao||{ativa:false,itens:null,iccs:null};}catch(e){}}
+function salvar(){try{localStorage.setItem("jit_v4",JSON.stringify({contagens:S.contagens,liberacoes:S.liberacoes,modo:S.modo,solicitacoes:S.solicitacoes,recontar:S.recontar,selecao:S.selecao,baseAtualizadaEm:S.baseAtualizadaEm,baseAtualizadaPor:S.baseAtualizadaPor}));}catch(e){}}
+function carregar(){try{const d=JSON.parse(localStorage.getItem("jit_v4")||"{}");S.contagens=d.contagens||[];S.liberacoes=d.liberacoes||{};ZONAS.forEach(z=>{if(!(z in S.liberacoes))S.liberacoes[z]=false;});S.modo=d.modo||"atribuido";S.solicitacoes=d.solicitacoes||[];S.recontar=d.recontar||{};S.selecao=d.selecao||{ativa:false,itens:null,iccs:null};S.baseAtualizadaEm=d.baseAtualizadaEm||null;S.baseAtualizadaPor=d.baseAtualizadaPor||null;}catch(e){}}
 
 function ts(){return new Date().toLocaleString("pt-BR");}
 function hora(){return new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
@@ -543,11 +545,16 @@ function el(id){return document.getElementById(id);}
 
 function atualizarInfoBase(){
   const x=el("baseEstoqueInfo");
-  if(x)x.textContent=`✓ ${ITENS.length.toLocaleString("pt-BR")} itens carregados · ${ZONAS.length} zonas`;
+  if(x){
+    const quando=S.baseAtualizadaEm?new Date(S.baseAtualizadaEm).toLocaleString("pt-BR"):"base inicial";
+    const quem=S.baseAtualizadaPor?` · por ${S.baseAtualizadaPor}`:"";
+    x.textContent=`✓ ${ITENS.length.toLocaleString("pt-BR")} itens · ${ZONAS.length} zonas · Atualização: ${quando}${quem}`;
+  }
 }
-function aplicarBaseEstoque(novaBase,propagar=true){
+function aplicarBaseEstoque(novaBase,propagar=true,meta=null){
   if(!Array.isArray(novaBase)||!novaBase.length)throw new Error("A base não contém itens válidos.");
   ITENS.splice(0,ITENS.length,...novaBase);
+  if(meta){S.baseAtualizadaEm=meta.em||S.baseAtualizadaEm;S.baseAtualizadaPor=meta.por||S.baseAtualizadaPor;}
   ZONAS=[...new Set(ITENS.map(i=>i.zona))].sort();
   localStorage.setItem("jit_itens",JSON.stringify(ITENS));
   const libs={};ZONAS.forEach(z=>libs[z]=false);S.liberacoes=libs;
@@ -611,7 +618,7 @@ function importarEstoqueCSV(input){
       const unicos=[...new Map(itens.map(i=>[i.codigo+"|"+i.local,i])).values()];
       if(!unicos.length)throw new Error("Não encontrei as colunas código e local.");
       if(!confirm(`Carregar ${unicos.length} itens?\n\nAs contagens existentes não serão apagadas, mas todas as zonas serão bloqueadas para conferência.`))return;
-      aplicarBaseEstoque(unicos,true);atualizarPainel();alert(`✓ Estoque atualizado: ${unicos.length} itens.`);
+      aplicarBaseEstoque(unicos,true,{em:new Date().toISOString(),por:S.usuario||"Líder"});atualizarPainel();alert(`✓ Estoque atualizado: ${unicos.length} itens.`);
     }catch(e){alert("Não foi possível importar: "+e.message);}
     input.value="";
   };
@@ -1507,7 +1514,8 @@ async function syncConfig(){
   if(!ONLINE) return false;
   try{
     const {error}=await sb.from("config").upsert({
-      sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, recontar:S.recontar, atualizado_em:new Date().toISOString()
+      sessao:SESSAO, modo:S.modo, selecao:S.selecao, itens:ITENS, recontar:S.recontar,
+      estoque_atualizado_em:S.baseAtualizadaEm, estoque_atualizado_por:S.baseAtualizadaPor, atualizado_em:new Date().toISOString()
     });
     if(error)throw error;return true;
   }catch(e){ console.log("sync config falhou:", e.message);return false; }
@@ -1528,7 +1536,7 @@ async function puxarTudo(){
     const {data:cfg} = await sb.from("config").select("*").eq("sessao",SESSAO).single();
     if(cfg){
       S.modo = cfg.modo||S.modo; S.selecao = cfg.selecao||S.selecao; S.recontar=cfg.recontar||{};
-      if(Array.isArray(cfg.itens)&&cfg.itens.length)aplicarBaseEstoque(cfg.itens,false);
+      if(Array.isArray(cfg.itens)&&cfg.itens.length)aplicarBaseEstoque(cfg.itens,false,{em:cfg.estoque_atualizado_em,por:cfg.estoque_atualizado_por});
     }
     salvar();
     if(typeof atualizarPainel==="function") atualizarPainel();
@@ -1581,7 +1589,7 @@ function escutarTempoReal(){
     .on("postgres_changes", {event:"*", schema:"public", table:"config", filter:`sessao=eq.${SESSAO}`},
       payload=>{
         if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;S.recontar=payload.new.recontar||{};
-          if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false); salvar();
+          if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false,{em:payload.new.estoque_atualizado_em,por:payload.new.estoque_atualizado_por}); salvar();
           if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
     .subscribe();
