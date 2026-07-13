@@ -21,7 +21,8 @@
 body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-height:100vh;-webkit-tap-highlight-color:transparent;}
 .hdr{background:var(--red);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25);}
 .hdr-logo{font-size:13px;font-weight:900;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
-.hdr-logo svg{width:30px;height:30px;}
+.hdr-wordmark{display:flex;align-items:center;gap:3px;font-size:18px;font-weight:900;letter-spacing:1px;}
+.hdr-wordmark .bar{width:3px;height:18px;border-radius:3px;background:#fff;opacity:.72;transform:skew(-8deg);margin:0 1px;}
 .hdr-center{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 8px;}
 .hdr-title{font-size:13px;font-weight:700;opacity:.95;}
 .hdr-clock{font-size:10px;font-weight:700;letter-spacing:1.2px;opacity:.78;margin-top:3px;font-variant-numeric:tabular-nums;}
@@ -114,10 +115,10 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 #sLogin .login-hero::after{content:"";position:absolute;width:110px;height:5px;border-radius:10px;background:var(--red);left:26px;bottom:30px;}
 .login-eyebrow{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:20px;background:rgba(255,255,255,.1);font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:18px;}
 .login-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#50D07A;box-shadow:0 0 0 4px rgba(80,208,122,.12);}
-.login-brand{display:flex;align-items:center;gap:13px;position:relative;z-index:1;}
-.login-brand-mark{width:58px;height:58px;flex-shrink:0;filter:drop-shadow(0 8px 16px rgba(0,0,0,.24));}
+.login-brand{display:flex;align-items:center;position:relative;z-index:1;}
 .login-brand-copy{min-width:0;}
-.login-logo-text{font-size:42px;font-weight:900;color:#fff;letter-spacing:5px;line-height:.92;}
+.login-logo-text{display:flex;align-items:center;gap:6px;font-size:48px;font-weight:900;color:#fff;letter-spacing:3px;line-height:.92;}
+.login-logo-text .jit-i{display:inline-block;width:7px;height:43px;border-radius:3px;background:var(--red);transform:skew(-7deg);box-shadow:0 0 24px rgba(204,0,0,.35);font-size:0;}
 .login-brand-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.66);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;}
 .login-divider{display:none;}
 .login-sub{font-size:10px;color:rgba(255,255,255,.68);letter-spacing:1px;text-transform:uppercase;margin-top:8px;}
@@ -202,8 +203,7 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 
 <div class="hdr">
   <div class="hdr-logo">
-    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="3" y="3" width="42" height="42" rx="12" fill="#fff"/><path d="M14 13v13c0 5 3 8 8 8h2" fill="none" stroke="#CC0000" stroke-width="5" stroke-linecap="round"/><path d="M27 14h8M31 14v20" fill="none" stroke="#CC0000" stroke-width="5" stroke-linecap="round"/><circle cx="14" cy="13" r="3" fill="#CC0000"/></svg>
-    JIT
+    <div class="hdr-wordmark"><span>J</span><span class="bar"></span><span>T</span></div>
   </div>
   <div class="hdr-center">
     <div class="hdr-title" id="hdrTitle">INVENTÁRIO JIT</div>
@@ -217,8 +217,7 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
   <div class="login-hero">
     <div class="login-eyebrow">Operação conectada</div>
     <div class="login-brand">
-      <svg class="login-brand-mark" viewBox="0 0 64 64" aria-label="Marca JIT"><rect x="2" y="2" width="60" height="60" rx="18" fill="#CC0000"/><path d="M18 16v19c0 7 4 11 11 11h3" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><path d="M37 17h11M42.5 17v29" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/><circle cx="18" cy="16" r="4" fill="#fff"/></svg>
-      <div class="login-brand-copy"><div class="login-logo-text">JIT</div><div class="login-brand-name">Inventário Pós‑Vendas</div></div>
+      <div class="login-brand-copy"><div class="login-logo-text"><span>J</span><span class="jit-i">I</span><span>T</span></div><div class="login-brand-name">Inventário Pós‑Vendas</div></div>
     </div>
     <div class="login-divider"></div>
     <div class="login-sub">Controle de inventário · Just‑in‑Time</div>
