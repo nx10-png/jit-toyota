@@ -15,7 +15,7 @@
   --yellow:#C8860A;--yellow-bg:#FFF8E7;
   --blue:#1565C0;--blue-bg:#E3F0FF;
   --orange:#D4500A;--orange-bg:#FFF0E8;
-  --font:'Arial',sans-serif;
+  --font:'Segoe UI',Arial,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-height:100vh;-webkit-tap-highlight-color:transparent;}
@@ -235,6 +235,33 @@ body:has(#sLogin.active)::before{content:"";position:fixed;inset:56px 0 0;pointe
 #sLogin .btn-red:active{background:linear-gradient(180deg,#65080d,#310204);}
 @media(max-width:360px){.kpi-value{font-size:20px;}.item-code{font-size:20px;}}
 @media(max-width:520px){body:has(#sLogin.active)::before{background:radial-gradient(circle at 50% 8%,rgba(164,22,22,.2),transparent 32%),linear-gradient(145deg,#17191c,#090a0c 58%,#151719);}#sLogin{padding-top:20px;}#sLogin .login-hero{margin:0 2px;}#sLogin>.card{margin:-19px 13px 0;}}
+
+/* POLIMENTO EXECUTIVO */
+body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;width:min(620px,100vw);height:420px;transform:translateX(-50%);pointer-events:none;background:radial-gradient(ellipse at top,rgba(255,255,255,.07),transparent 58%);}
+#sLogin .login-hero{isolation:isolate;border-top-color:#8a8d90;box-shadow:0 30px 80px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.2),inset 0 -18px 30px rgba(0,0,0,.18);}
+#sLogin .login-hero>*{position:relative;z-index:2;}
+#sLogin .login-hero .login-eyebrow{display:inline-flex;position:absolute;right:22px;top:20px;align-items:center;gap:7px;margin:0;padding:6px 10px;border:1px solid rgba(112,219,150,.22);border-radius:20px;background:rgba(7,35,18,.42);color:#91d9aa;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;box-shadow:inset 0 1px rgba(255,255,255,.05);}
+#sLogin .login-hero .login-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#55d584;box-shadow:0 0 9px #55d584;}
+.login-brand{padding-top:14px;}
+.login-logo-text{background:linear-gradient(180deg,#fff 0%,#d9dadd 42%,#8f9296 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 1px #000);}
+.login-logo-text .jit-i{background:linear-gradient(180deg,#ff4b53,#c90913 52%,#6b0005);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 8px rgba(220,0,10,.45));}
+.login-brand-name{font-weight:600;color:#f3f3f3;}
+#loginData{padding-top:2px;}
+#sLogin>.card{overflow:hidden;border-top-color:#73767a;}
+#sLogin>.card::after{content:"";position:absolute;left:15%;right:15%;top:0;height:1px;background:linear-gradient(90deg,transparent,#e7c9a0,transparent);opacity:.65;}
+#sLogin .card-title{display:flex;align-items:center;gap:9px;text-transform:uppercase;font-size:10px;font-weight:700;letter-spacing:1.5px;color:#d8d9da;}
+#sLogin .card-title::before{content:"";width:18px;height:1px;background:#c31a22;box-shadow:0 0 6px rgba(220,0,0,.55);}
+#sLogin .field input{border-radius:6px;font-size:15px;transition:box-shadow .2s,border-color .2s,transform .2s;}
+#sLogin .field input:focus{border-color:#d2b892;box-shadow:inset 0 2px 4px rgba(0,0,0,.2),0 0 0 3px rgba(210,184,146,.13);transform:translateY(-1px);}
+#sLogin .profile-card{overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;}
+#sLogin .profile-card:hover{transform:translateY(-2px);border-color:#808388;}
+#sLogin .profile-card.sel::after{content:"✓";position:absolute;right:8px;top:7px;width:17px;height:17px;display:grid;place-items:center;border-radius:50%;background:#d21620;color:#fff;font-size:10px;font-weight:900;box-shadow:0 0 9px rgba(220,0,0,.45);}
+#sLogin .profile-icon{width:45px;height:45px;border-radius:10px;}
+#sLogin .profile-icon svg{width:27px;height:27px;}
+#sLogin .btn-red{border-radius:6px;font-size:12px;letter-spacing:1.8px;overflow:hidden;}
+#sLogin .btn-red::after{content:"›";position:absolute;right:17px;top:50%;transform:translateY(-53%);font-size:21px;font-weight:300;opacity:.75;}
+#sLogin .btn-red:hover{filter:brightness(1.12);box-shadow:0 0 0 2px rgba(106,7,12,.8),0 10px 24px rgba(0,0,0,.5),0 0 18px rgba(204,0,0,.18),inset 0 1px rgba(255,255,255,.2);}
+@media(max-width:400px){#sLogin .login-hero .login-eyebrow{right:16px;top:16px;font-size:7px;padding:5px 8px}.login-logo-text{font-size:51px}.login-brand-name{font-size:11px}}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -254,7 +281,7 @@ body:has(#sLogin.active)::before{content:"";position:fixed;inset:56px 0 0;pointe
 <!-- TELA 0: LOGIN -->
 <div class="screen active" id="sLogin">
   <div class="login-hero">
-    <div class="login-eyebrow">Operação conectada</div>
+    <div class="login-eyebrow">Sistema sincronizado</div>
     <div class="login-brand">
       <div class="login-brand-copy"><div class="login-logo-text"><span>J</span><span class="jit-i">I</span><span>T</span></div><div class="login-brand-name">Inventário</div></div>
     </div>
