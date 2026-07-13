@@ -208,7 +208,7 @@ body:has(#sLogin.active)::before{content:"";position:fixed;inset:56px 0 0;pointe
 .hdr{height:58px;background:linear-gradient(180deg,#3f4245 0%,#1d1f21 45%,#0b0c0d 100%);border-top:1px solid #75797c;border-bottom:1px solid #050505;box-shadow:0 3px 13px rgba(0,0,0,.65),inset 0 -1px rgba(255,255,255,.08);}
 .hdr::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:.75;}
 .hdr-wordmark{padding:5px 9px;border:1px solid rgba(255,255,255,.2);border-radius:5px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(0,0,0,.16));text-shadow:0 1px 2px #000;}
-.hdr-clock{color:#a9e8c0;opacity:.88;}
+.hdr-clock{color:rgba(255,255,255,.72);opacity:.88;}
 #sLogin{position:relative;padding-top:30px;max-width:440px;}
 #sLogin .login-hero{padding:28px 29px 53px;border-radius:18px 18px 8px 8px;background:linear-gradient(135deg,#4c4f52 0%,#26282a 18%,#111214 65%,#282a2d 100%);border:1px solid #676a6d;border-bottom-color:#151515;box-shadow:0 26px 65px rgba(0,0,0,.6),inset 0 1px rgba(255,255,255,.17);}
 #sLogin .login-hero::before{width:210px;height:210px;right:-86px;top:-120px;border-color:rgba(255,255,255,.09);box-shadow:0 0 0 26px rgba(255,255,255,.025),0 0 0 52px rgba(0,0,0,.08);}
@@ -217,7 +217,7 @@ body:has(#sLogin.active)::before{content:"";position:fixed;inset:56px 0 0;pointe
 .login-logo-text .jit-i{margin:0 5px;color:#e1161f;text-shadow:0 0 13px rgba(225,22,31,.6),0 2px #000;}
 .login-brand-name{font-size:13px;color:#ececec;letter-spacing:2.4px;margin-left:3px;}
 #loginData{display:flex;align-items:center;gap:7px;color:#a9adb0!important;font-size:10px!important;letter-spacing:.5px;}
-#loginData::before{content:"";width:6px;height:6px;border-radius:50%;background:#4dcc78;box-shadow:0 0 8px #4dcc78;}
+#loginData::before{display:none;}
 #sLogin>.card{margin:-20px 17px 0;padding:24px 23px 21px;border-radius:9px;background:linear-gradient(145deg,#27292c,#151618);border:1px solid #5b5e61;color:#fff;box-shadow:0 20px 45px rgba(0,0,0,.58),inset 0 1px rgba(255,255,255,.09);}
 #sLogin>.card::before{content:"";position:absolute;inset:6px;border:1px solid rgba(255,255,255,.055);border-radius:6px;pointer-events:none;}
 #sLogin .card-title{position:relative;color:#f1f1f1;font-size:13px;letter-spacing:.5px;margin-bottom:19px;}
@@ -281,7 +281,6 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
 <!-- TELA 0: LOGIN -->
 <div class="screen active" id="sLogin">
   <div class="login-hero">
-    <div class="login-eyebrow">Sistema sincronizado</div>
     <div class="login-brand">
       <div class="login-brand-copy"><div class="login-logo-text"><span>J</span><span class="jit-i">I</span><span>T</span></div><div class="login-brand-name">Inventário</div></div>
     </div>
