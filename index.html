@@ -21,8 +21,9 @@
 body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-height:100vh;-webkit-tap-highlight-color:transparent;}
 .hdr{background:var(--red);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:56px;position:sticky;top:0;z-index:200;box-shadow:0 2px 8px rgba(0,0,0,.25);}
 .hdr-logo{font-size:13px;font-weight:900;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
-.hdr-wordmark{display:flex;align-items:center;gap:3px;font-size:18px;font-weight:900;letter-spacing:1px;}
-.hdr-wordmark .bar{width:3px;height:18px;border-radius:3px;background:#fff;opacity:.72;transform:skew(-8deg);margin:0 1px;}
+.hdr-wordmark{display:flex;align-items:center;gap:1px;font-size:18px;font-weight:900;letter-spacing:.5px;}
+.hdr-wordmark .bar{width:auto;height:auto;background:none;opacity:1;transform:none;margin:0;color:#fff;}
+.hdr-wordmark .bar::before{content:"I";}
 .hdr-center{text-align:center;line-height:1.15;flex:1;min-width:0;padding:0 8px;}
 .hdr-title{font-size:13px;font-weight:700;opacity:.95;}
 .hdr-clock{font-size:10px;font-weight:700;letter-spacing:1.2px;opacity:.78;margin-top:3px;font-variant-numeric:tabular-nums;}
@@ -116,8 +117,8 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 .login-eyebrow{display:none;}
 .login-brand{display:flex;align-items:center;position:relative;z-index:1;}
 .login-brand-copy{min-width:0;}
-.login-logo-text{display:flex;align-items:center;gap:4px;font-size:54px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:.88;}
-.login-logo-text .jit-i{display:inline-block;width:7px;height:46px;border-radius:1px;background:var(--red);transform:skew(-6deg);box-shadow:0 0 22px rgba(204,0,0,.3);font-size:0;margin:0 3px;}
+.login-logo-text{display:flex;align-items:center;gap:1px;font-size:54px;font-weight:900;color:#fff;letter-spacing:-1px;line-height:.88;}
+.login-logo-text .jit-i{display:inline;color:var(--red);font-size:1em;line-height:inherit;background:none;transform:none;box-shadow:none;margin:0;}
 .login-brand-name{font-size:12px;font-weight:700;color:rgba(255,255,255,.72);letter-spacing:1.8px;text-transform:uppercase;margin-top:12px;}
 .login-divider{display:none;}
 .login-sub{display:none;}
