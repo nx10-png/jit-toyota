@@ -1,0 +1,17 @@
+{
+  "name": "JIT Inventário",
+  "short_name": "JIT",
+  "description": "Sistema de inventário para operação de pós-vendas",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0d0f",
+  "theme_color": "#111214",
+  "lang": "pt-BR",
+  "orientation": "any",
+  "icons": [
+    {"src": "icon-jit.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "icon-jit.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any"}
+  ]
+}
+
