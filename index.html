@@ -1697,11 +1697,8 @@ async function carregarPresencasNuvem(){
   if(!ONLINE)return [];
   try{
     const limite=new Date(Date.now()-120000).toISOString();
-    const [{data:p,error:e1},{data:a,error:e2}]=await Promise.all([
-      sb.from("presencas").select("usuario,ultimo_ping").eq("sessao",SESSAO).eq("ativo",true).gte("ultimo_ping",limite).order("usuario"),
-      sb.from("atribuicoes").select("usuario").eq("sessao",SESSAO)
-    ]);if(e1)throw e1;if(e2)throw e2;
-    const cont={};(a||[]).forEach(x=>cont[x.usuario]=(cont[x.usuario]||0)+1);
+    const {data:p,error:e1}=await sb.from("presencas").select("usuario,ultimo_ping").eq("sessao",SESSAO).eq("ativo",true).gte("ultimo_ping",limite).order("usuario");if(e1)throw e1;
+    const cont={};await Promise.all((p||[]).map(async x=>{const {count,error}=await sb.from("atribuicoes").select("id",{count:"exact",head:true}).eq("sessao",SESSAO).eq("usuario",x.usuario);if(error)throw error;cont[x.usuario]=count||0;}));
     return (p||[]).map(x=>({...x,itens_atribuidos:cont[x.usuario]||0}));
   }catch(e){console.log("buscar presenças falhou:",e.message);return [];}
 }
