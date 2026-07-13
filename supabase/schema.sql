@@ -59,17 +59,45 @@ create table if not exists public.config (
   recontar jsonb not null default '{}'::jsonb,
   estoque_atualizado_em timestamptz,
   estoque_atualizado_por text,
+  distribuicao_ativa boolean not null default false,
+  distribuido_em timestamptz,
+  distribuido_por text,
   atualizado_em timestamptz not null default now()
+);
+
+create table if not exists public.presencas (
+  sessao text not null,
+  usuario text not null,
+  dispositivo_id text not null,
+  ativo boolean not null default true,
+  ultimo_ping timestamptz not null default now(),
+  primary key (sessao, usuario)
+);
+
+create table if not exists public.atribuicoes (
+  id uuid primary key default gen_random_uuid(),
+  sessao text not null,
+  codigo text not null,
+  local text not null,
+  usuario text not null,
+  ordem text,
+  peso numeric not null default 1,
+  criado_em timestamptz not null default now(),
+  constraint atribuicao_item_unico unique (sessao, codigo, local)
 );
 
 create index if not exists contagens_sessao_codigo_idx on public.contagens (sessao, codigo);
 create index if not exists contagens_sessao_criado_idx on public.contagens (sessao, criado_em);
 create index if not exists solicitacoes_sessao_criado_idx on public.solicitacoes (sessao, criado_em);
+create index if not exists presencas_ativos_idx on public.presencas (sessao, ativo, ultimo_ping);
+create index if not exists atribuicoes_usuario_idx on public.atribuicoes (sessao, usuario, ordem);
 
 alter table public.contagens enable row level security;
 alter table public.solicitacoes enable row level security;
 alter table public.liberacoes enable row level security;
 alter table public.config enable row level security;
+alter table public.presencas enable row level security;
+alter table public.atribuicoes enable row level security;
 
 -- MVP interno: o aplicativo estatico usa a chave publica e pode ler/gravar.
 -- Estas quatro politicas ficam isoladas para futura troca por Supabase Auth.
@@ -81,6 +109,10 @@ drop policy if exists "mvp_liberacoes" on public.liberacoes;
 create policy "mvp_liberacoes" on public.liberacoes for all to anon, authenticated using (true) with check (true);
 drop policy if exists "mvp_config" on public.config;
 create policy "mvp_config" on public.config for all to anon, authenticated using (true) with check (true);
+drop policy if exists "mvp_presencas" on public.presencas;
+create policy "mvp_presencas" on public.presencas for all to anon, authenticated using (true) with check (true);
+drop policy if exists "mvp_atribuicoes" on public.atribuicoes;
+create policy "mvp_atribuicoes" on public.atribuicoes for all to anon, authenticated using (true) with check (true);
 
 do $$
 begin
@@ -100,6 +132,14 @@ begin
     select 1 from pg_publication_tables
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'config'
   ) then alter publication supabase_realtime add table public.config; end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'presencas'
+  ) then alter publication supabase_realtime add table public.presencas; end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'atribuicoes'
+  ) then alter publication supabase_realtime add table public.atribuicoes; end if;
 end $$;
 
 insert into public.config (sessao) values ('inventario_atual')
