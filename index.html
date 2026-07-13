@@ -197,7 +197,44 @@ body{font-family:var(--font);background:var(--gray-bg);color:var(--black);min-he
 .cov-bar-label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .ani{animation:fadeIn .25s ease;}
+
+/* LOGIN PREMIUM — linguagem industrial e operacional */
+body:has(#sLogin.active){background:#0c0d0f;}
+body:has(#sLogin.active)::before{content:"";position:fixed;inset:56px 0 0;pointer-events:none;background:
+  radial-gradient(circle at 50% 12%,rgba(164,22,22,.18),transparent 27%),
+  linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px),
+  linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+  linear-gradient(145deg,#17191c 0%,#090a0c 48%,#151719 100%);background-size:auto,44px 44px,44px 44px,auto;}
+.hdr{height:58px;background:linear-gradient(180deg,#3f4245 0%,#1d1f21 45%,#0b0c0d 100%);border-top:1px solid #75797c;border-bottom:1px solid #050505;box-shadow:0 3px 13px rgba(0,0,0,.65),inset 0 -1px rgba(255,255,255,.08);}
+.hdr::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:.75;}
+.hdr-wordmark{padding:5px 9px;border:1px solid rgba(255,255,255,.2);border-radius:5px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(0,0,0,.16));text-shadow:0 1px 2px #000;}
+.hdr-clock{color:#a9e8c0;opacity:.88;}
+#sLogin{position:relative;padding-top:30px;max-width:440px;}
+#sLogin .login-hero{padding:28px 29px 53px;border-radius:18px 18px 8px 8px;background:linear-gradient(135deg,#4c4f52 0%,#26282a 18%,#111214 65%,#282a2d 100%);border:1px solid #676a6d;border-bottom-color:#151515;box-shadow:0 26px 65px rgba(0,0,0,.6),inset 0 1px rgba(255,255,255,.17);}
+#sLogin .login-hero::before{width:210px;height:210px;right:-86px;top:-120px;border-color:rgba(255,255,255,.09);box-shadow:0 0 0 26px rgba(255,255,255,.025),0 0 0 52px rgba(0,0,0,.08);}
+#sLogin .login-hero::after{width:72px;height:3px;bottom:28px;background:linear-gradient(90deg,#5e0000,#ef2525,#5e0000);box-shadow:0 0 13px rgba(220,0,0,.65);}
+.login-logo-text{font-family:Arial Black,Arial,sans-serif;font-size:56px;letter-spacing:-4px;text-shadow:0 2px 1px #000,0 0 15px rgba(255,255,255,.12);}
+.login-logo-text .jit-i{margin:0 5px;color:#e1161f;text-shadow:0 0 13px rgba(225,22,31,.6),0 2px #000;}
+.login-brand-name{font-size:13px;color:#ececec;letter-spacing:2.4px;margin-left:3px;}
+#loginData{display:flex;align-items:center;gap:7px;color:#a9adb0!important;font-size:10px!important;letter-spacing:.5px;}
+#loginData::before{content:"";width:6px;height:6px;border-radius:50%;background:#4dcc78;box-shadow:0 0 8px #4dcc78;}
+#sLogin>.card{margin:-20px 17px 0;padding:24px 23px 21px;border-radius:9px;background:linear-gradient(145deg,#27292c,#151618);border:1px solid #5b5e61;color:#fff;box-shadow:0 20px 45px rgba(0,0,0,.58),inset 0 1px rgba(255,255,255,.09);}
+#sLogin>.card::before{content:"";position:absolute;inset:6px;border:1px solid rgba(255,255,255,.055);border-radius:6px;pointer-events:none;}
+#sLogin .card-title{position:relative;color:#f1f1f1;font-size:13px;letter-spacing:.5px;margin-bottom:19px;}
+#sLogin .field label,#sLogin>.card>label{color:#bfc1c3!important;}
+#sLogin .field input{position:relative;background:linear-gradient(180deg,#e5e3df,#bdbbb7);border:1px solid #777;color:#191919;box-shadow:inset 0 2px 4px rgba(0,0,0,.22),0 1px rgba(255,255,255,.12);}
+#sLogin .field input::placeholder{color:#5d5d5d;}
+#sLogin .profile-card{position:relative;padding:16px 10px;background:linear-gradient(145deg,#303236,#191a1d);border-color:#5d6064;color:#fff;box-shadow:inset 0 1px rgba(255,255,255,.08);}
+#sLogin .profile-card.sel{border-color:#ef2631;background:linear-gradient(145deg,#531318,#21080a);box-shadow:0 0 0 2px rgba(204,0,0,.18),0 0 18px rgba(204,0,0,.3),inset 0 1px rgba(255,255,255,.12);}
+#sLogin .profile-icon{background:linear-gradient(145deg,#54575b,#242629);color:#d8d9da;border:1px solid rgba(255,255,255,.12);}
+#sLogin .profile-card.sel .profile-icon{background:linear-gradient(145deg,#df1c25,#71070c);box-shadow:0 5px 16px rgba(204,0,0,.35);}
+#sLogin .profile-name{color:#f3f3f3;}
+#sLogin .quick-guide summary{color:#aeb1b3;}
+#sLogin .quick-guide-body{color:#d1d2d3;border-color:#414346;}
+#sLogin .btn-red{position:relative;border:1px solid #ef3a42;background:linear-gradient(180deg,#921017 0%,#4f0509 55%,#2b0204 100%);box-shadow:0 0 0 2px rgba(106,7,12,.8),0 8px 20px rgba(0,0,0,.45),inset 0 1px rgba(255,255,255,.18);}
+#sLogin .btn-red:active{background:linear-gradient(180deg,#65080d,#310204);}
 @media(max-width:360px){.kpi-value{font-size:20px;}.item-code{font-size:20px;}}
+@media(max-width:520px){body:has(#sLogin.active)::before{background:radial-gradient(circle at 50% 8%,rgba(164,22,22,.2),transparent 32%),linear-gradient(145deg,#17191c,#090a0c 58%,#151719);}#sLogin{padding-top:20px;}#sLogin .login-hero{margin:0 2px;}#sLogin>.card{margin:-19px 13px 0;}}
 </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
