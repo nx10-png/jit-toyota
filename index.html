@@ -579,6 +579,7 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
       <div style="height:1px;background:var(--gray-light);margin:14px 0;"></div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:8px;">📦 Base do estoque</div>
       <div id="baseEstoqueInfo" class="alert alert-info show">Carregando base...</div>
+      <div id="baseEstoqueEspecial" class="alert alert-info" style="white-space:pre-line;align-items:flex-start;"></div>
       <div id="baseEstoqueAlertas" class="alert alert-warn" style="white-space:pre-line;align-items:flex-start;"></div>
       <label class="btn btn-green" style="cursor:pointer;text-align:center;">
         📤 CARREGAR ESTOQUE ATUALIZADO (EXCEL OU CSV)
@@ -691,6 +692,7 @@ function itemSemLocacao(i){
 }
 function avaliarBaseEstoque(lista){
   const semLocal=lista.filter(itemSemLocacao);
+  const especiais=lista.filter(i=>!itemSemLocacao(i)&&!/^([A-Z]\d{2})(\d{2})([A-Z])(\d{2})$/.test(String(i.local||"").trim().toUpperCase()));
   const porLocal=new Map();
   lista.filter(i=>!itemSemLocacao(i)).forEach(i=>{
     const local=String(i.local).trim().toUpperCase();
@@ -698,11 +700,15 @@ function avaliarBaseEstoque(lista){
     porLocal.get(local).add(String(i.codigo).trim().toUpperCase());
   });
   const compartilhadas=[...porLocal.entries()].filter(([,codigos])=>codigos.size>1).sort((a,b)=>b[1].size-a[1].size);
-  return {semLocal,compartilhadas};
+  return {semLocal,especiais,compartilhadas};
 }
 function atualizarAlertasBase(){
-  const x=el("baseEstoqueAlertas");if(!x)return;
+  const x=el("baseEstoqueAlertas"),info=el("baseEstoqueEspecial");if(!x)return;
   const a=avaliarBaseEstoque(ITENS),linhas=[];
+  if(info){
+    info.textContent=a.especiais.length?`ℹ LOCAÇÃO ESPECIAL — ${a.especiais.length} item(ns)\nEndereço que não segue o padrão de zona/corredor. Continua na contagem normalmente e recebe peso adicional na distribuição para não sobrecarregar o estoquista.`:"";
+    info.classList.toggle("show",a.especiais.length>0);
+  }
   if(a.semLocal.length)linhas.push(`⚠ ${a.semLocal.length} item(ns) sem locação definida (SL).`);
   if(a.compartilhadas.length){
     const ex=a.compartilhadas.slice(0,3).map(([l,c])=>`${l}: ${c.size} itens`).join(" · ");
@@ -786,6 +792,7 @@ function importarEstoqueCSV(input){
       const unicos=[...new Map(itens.map(i=>[i.codigo+"|"+i.local,i])).values()];
       if(!unicos.length)throw new Error("Não encontrei as colunas código e local.");
       const avisos=avaliarBaseEstoque(unicos),resumo=[];
+      if(avisos.especiais.length)resumo.push(`ℹ ${avisos.especiais.length} item(ns) em locação especial (fora do padrão de zona/corredor)`);
       if(avisos.semLocal.length)resumo.push(`⚠ ${avisos.semLocal.length} item(ns) sem locação (SL)`);
       if(avisos.compartilhadas.length)resumo.push(`⚠ ${avisos.compartilhadas.length} locação(ões) com itens diferentes`);
       if(!confirm(`Carregar ${unicos.length} itens?${resumo.length?`\n\nCONFERÊNCIA:\n${resumo.join("\n")}`:"\n\n✓ Nenhuma pendência de locação identificada."}\n\nAs contagens existentes não serão apagadas, mas todas as zonas serão bloqueadas para conferência.`))return;
