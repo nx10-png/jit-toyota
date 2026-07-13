@@ -8,15 +8,17 @@ Aplicativo web móvel para contagem cega de estoque, acompanhamento por zonas, d
 2. Acesse **Exportar > Base do estoque**.
 3. Carregue o arquivo Excel (`.xlsx` ou `.xls`) atualizado. CSV também é aceito.
 4. Confira a quantidade de itens e zonas exibida na tela.
-5. Libere as zonas somente depois da conferência.
-6. Nos demais aparelhos, abra ou recarregue o aplicativo e entre como estoquista.
+5. Peça para cada estoquista abrir o aplicativo, informar o nome completo e entrar. Eles ficarão como ativos e aguardando.
+6. Em **Abertura**, confira a equipe ativa, marque quem participará e pressione **Distribuir**.
+7. O sistema dividirá os itens em blocos equilibrados de rota e liberará uma fila exclusiva para cada pessoa.
+8. Nos aparelhos dos estoquistas, pressione **Verificar agora** caso a fila não apareça imediatamente.
 
 O sistema lê a primeira aba do Excel. CSV com vírgula ou ponto e vírgula também é aceito. Os nomes reconhecidos incluem:
 
 - `codigo`, `descricao`, `local`, `quantidade`, `custo`, `icc`, `unidade`;
 - alternativas comuns como `qtd`, `saldo`, `estoque`, `endereco`, `valor` e `un`.
 
-As colunas **código** e **local** são obrigatórias. Ao importar uma nova base, as zonas ficam bloqueadas para evitar que a contagem comece antes da conferência.
+As colunas **código** e **local** são obrigatórias. Ao importar uma nova base, a distribuição anterior é cancelada para impedir o uso de uma lista desatualizada.
 
 ## Banco de dados
 
