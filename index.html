@@ -324,6 +324,11 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
         <div class="profile-sub">Painel</div>
       </div>
     </div>
+    <div id="blocoCodigoEstoque" style="margin-top:16px;">
+      <div class="field"><label>Código individual</label>
+        <input type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" id="iCodigoEstoque" placeholder="6 dígitos" maxlength="6"/></div>
+      <div id="alertCodigoErro" class="alert alert-error">Nome ou código não conferem. Peça à líder para verificar seu cadastro.</div>
+    </div>
     <details class="quick-guide">
       <summary id="guiaTitulo">Como usar</summary>
       <div class="quick-guide-body" id="guiaConteudo">
@@ -340,6 +345,18 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
       <div id="alertSenhaErro" class="alert alert-error">Senha incorreta.</div>
     </div>
     <button class="btn btn-red" style="margin-top:8px;" onclick="entrar()">ENTRAR</button>
+  </div>
+</div>
+
+<!-- TELA 0.5: CONFIRMAÇÃO DE PRESENÇA -->
+<div class="screen" id="sPronto">
+  <div class="card ani" style="margin-top:30px;text-align:center;padding:28px 22px;">
+    <div style="font-size:44px;margin-bottom:10px;">✓</div>
+    <div style="font-size:19px;font-weight:800;color:var(--green);">Acesso confirmado</div>
+    <div id="prontoNome" style="font-size:14px;font-weight:700;margin-top:8px;"></div>
+    <div style="font-size:12px;color:var(--gray-mid);line-height:1.6;margin:12px 0 20px;">Toque no botão somente quando estiver disponível para iniciar a contagem. A líder verá seu nome na equipe ativa.</div>
+    <button class="btn btn-green" onclick="ficarPronto()">ESTOU PRONTO PARA CONTAR</button>
+    <button class="btn btn-gray" onclick="voltarLogin()">← SAIR</button>
   </div>
 </div>
 
@@ -482,6 +499,21 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
 
   <!-- TAB 0: ABERTURA -->
   <div class="tab-content active" id="tLib">
+    <div class="card ani">
+      <div class="card-title">Cadastro da equipe</div>
+      <div class="alert alert-info show" style="display:block;line-height:1.65;">
+        <b>Passo a passo da líder</b><br>
+        1. Cadastre o nome completo do estoquista.<br>
+        2. Toque em <b>Enviar acesso</b> e escolha a pessoa no WhatsApp.<br>
+        3. Peça para ela entrar e tocar em <b>Estou pronto</b>.<br>
+        4. Selecione os disponíveis, libere as zonas e distribua.
+      </div>
+      <div id="equipeStatus" class="alert alert-warn">Ativação do cadastro pendente. O acesso antigo continua disponível até a atualização do banco.</div>
+      <div class="field" style="margin-top:12px;"><label>Nome completo</label><input type="text" id="iNomeEquipe" placeholder="Ex.: Luiz Felippe"/></div>
+      <button class="btn btn-red" onclick="cadastrarMembroEquipe()">+ CADASTRAR ESTOQUISTA</button>
+      <div id="equipeView" style="margin-top:12px;"><div style="text-align:center;color:var(--gray-mid);padding:12px;font-size:12px;">Carregando equipe...</div></div>
+      <div style="font-size:10px;color:var(--gray-mid);line-height:1.45;margin-top:8px;">O telefone não é salvo. O WhatsApp apenas abre para a líder escolher o contato e enviar a mensagem pronta.</div>
+    </div>
     <div class="card ani">
       <div class="card-title">Modo de Operação</div>
       <div class="mode-card sel" id="modeAtrib" onclick="selModo('atribuido')">
@@ -668,6 +700,10 @@ let S = {
   distribuidoPor:null,
   atribuicoes:[],
   presencas:[],
+  equipe:[],
+  membroEquipe:null,
+  pronto:false,
+  cadastroEquipeAtivo:false,
 };
 ZONAS.forEach(z=>S.liberacoes[z]=false);
 
@@ -819,6 +855,8 @@ function selPerfil(p){
   el("pcEst").classList.toggle("sel",p==="estoquista");
   el("pcLid").classList.toggle("sel",p==="lider");
   el("blocoSenha").style.display = p==="lider"?"block":"none";
+  el("blocoCodigoEstoque").style.display = p==="estoquista"?"block":"none";
+  el("alertCodigoErro").classList.remove("show");
   atualizarOrientacaoPerfil(p);
 }
 function atualizarOrientacaoPerfil(p){
@@ -828,15 +866,20 @@ function atualizarOrientacaoPerfil(p){
     c.innerHTML='<ol><li>Entre com seu nome e a senha de líder.</li><li>Importe o Excel atualizado e confira o total de itens e zonas.</li><li>Faça um teste curto, resete os dados de teste e libere as zonas gradualmente.</li><li>Acompanhe divergências, recontagens e histórico; ao final, exporte relatórios e backup.</li></ol>';
   }else{
     t.textContent="Como usar";
-    c.innerHTML='<ol><li>Informe seu nome completo e entre como estoquista.</li><li>Aguarde o líder liberar sua zona.</li><li>Siga a localização indicada e registre a contagem sem consultar o saldo.</li><li>Use foto para avarias ou peças encontradas fora do lugar.</li></ol>';
+    c.innerHTML='<ol><li>Informe seu nome completo e o código recebido da líder.</li><li>Toque em <b>Estou pronto</b> quando estiver disponível.</li><li>Aguarde a distribuição e siga a localização indicada.</li><li>Registre a contagem sem consultar o saldo; use foto apenas para avarias ou peças fora do lugar.</li></ol>';
   }
 }
 
-function entrar(){
+async function entrar(){
   const nome=el("iNome").value.trim();
   if(!nome){el("iNome").focus();return;}
   if(S.perfilSel==="lider"){
     if(el("iSenha").value!==SENHA_LIDER){el("alertSenhaErro").classList.add("show");el("iSenha").value="";el("iSenha").focus();return;}
+  }else{
+    const codigo=el("iCodigoEstoque").value.trim();
+    const acesso=await verificarAcessoEquipe(nome,codigo);
+    if(!acesso.ok){el("alertCodigoErro").classList.add("show");el("iCodigoEstoque").value="";el("iCodigoEstoque").focus();return;}
+    S.membroEquipe=acesso.membro||null;
   }
   S.usuario=nome; S.funcao=S.perfilSel;
   carregar();
@@ -846,9 +889,19 @@ function entrar(){
     mostrarTela("sLider");
     selModo(S.modo);
     atualizarPainel();
+    carregarEquipeNuvem();
   } else {
-    iniciarEstoquista();
+    S.pronto=false;
+    el("prontoNome").textContent=nome;
+    el("hdrTitle").textContent="CONFIRMAR PRESENÇA";
+    mostrarTela("sPronto");
   }
+}
+
+async function ficarPronto(){
+  S.pronto=true;
+  await registrarPresencaNuvem();
+  await iniciarEstoquista();
 }
 
 // ── UI DE SELEÇÃO DO LÍDER ──
@@ -952,6 +1005,67 @@ function obterDispositivoId(){
   return id;
 }
 function escHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+const codigosTemporarios=new Map();
+function normalizarNome(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().replace(/\s+/g," ").toLowerCase();}
+function gerarCodigoEquipe(){const a=new Uint32Array(1);crypto.getRandomValues(a);return String(100000+(a[0]%900000));}
+function gerarSalEquipe(){const a=new Uint8Array(16);crypto.getRandomValues(a);return [...a].map(x=>x.toString(16).padStart(2,"0")).join("");}
+async function hashCodigoEquipe(codigo,sal){
+  const dados=new TextEncoder().encode(`${sal}:${codigo}`),hash=await crypto.subtle.digest("SHA-256",dados);
+  return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+function atualizarStatusEquipe(ativo){
+  S.cadastroEquipeAtivo=!!ativo;const x=el("equipeStatus");if(!x)return;
+  x.className=ativo?"alert alert-success show":"alert alert-warn show";
+  x.textContent=ativo?"✓ Cadastro individual ativo. Somente estoquistas cadastrados e ativos conseguem entrar.":"⚠ Cadastro ainda não ativado no banco. O acesso antigo permanece liberado temporariamente.";
+}
+async function carregarEquipeNuvem(){
+  if(!ONLINE||!sb){atualizarStatusEquipe(false);return []}
+  try{
+    const {data,error}=await sb.from("equipe").select("id,nome,nome_norm,ativo,criado_em,ultimo_acesso").eq("sessao",SESSAO).order("nome");
+    if(error)throw error;S.equipe=data||[];atualizarStatusEquipe(true);renderEquipe();return S.equipe;
+  }catch(e){S.equipe=[];atualizarStatusEquipe(false);renderEquipe();return [];}
+}
+function renderEquipe(){
+  const x=el("equipeView");if(!x)return;const lista=S.equipe||[];
+  x.innerHTML=lista.length?lista.map(m=>{const codigo=codigosTemporarios.get(m.id);return `<div class="presence-row" style="align-items:flex-start;gap:10px;"><span class="presence-dot" style="background:${m.ativo?'var(--green)':'var(--gray-mid)'}"></span><span class="presence-name" style="flex:1;">${escHtml(m.nome)}<span class="presence-meta"><br>${m.ativo?'Cadastro ativo':'Cadastro desativado'}${codigo?` · Código novo: <b>${codigo}</b>`:''}</span><span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><button class="btn btn-green btn-sm" style="width:auto;margin:0;padding:8px 10px;" onclick="enviarAcessoWhatsapp('${m.id}')">Enviar acesso</button><button class="btn btn-outline btn-sm" style="width:auto;margin:0;padding:8px 10px;" onclick="redefinirCodigoEquipe('${m.id}')">Novo código</button><button class="btn btn-gray btn-sm" style="width:auto;margin:0;padding:8px 10px;" onclick="alternarMembroEquipe('${m.id}',${!m.ativo})">${m.ativo?'Desativar':'Ativar'}</button></span></span></div>`;}).join(""):'<div style="text-align:center;color:var(--gray-mid);padding:12px;font-size:12px;">Nenhum estoquista cadastrado.</div>';
+}
+async function cadastrarMembroEquipe(){
+  const input=el("iNomeEquipe"),nome=input.value.trim().replace(/\s+/g," ");
+  if(nome.length<3){input.focus();return}if(!S.cadastroEquipeAtivo){alert("Ative primeiro a atualização de cadastro no Supabase.");return}
+  const codigo=gerarCodigoEquipe(),sal=gerarSalEquipe(),codigo_hash=await hashCodigoEquipe(codigo,sal);
+  try{
+    const {data,error}=await sb.from("equipe").insert({sessao:SESSAO,nome,nome_norm:normalizarNome(nome),codigo_hash,codigo_salt:sal,ativo:true,criado_por:S.usuario}).select("id,nome,nome_norm,ativo,criado_em,ultimo_acesso").single();
+    if(error)throw error;codigosTemporarios.set(data.id,codigo);input.value="";await carregarEquipeNuvem();alert("✓ Estoquista cadastrado. Agora toque em “Enviar acesso” para abrir o WhatsApp.");
+  }catch(e){alert(e.code==="23505"?"Este nome já está cadastrado.":"Não foi possível cadastrar agora.");}
+}
+async function alternarMembroEquipe(id,ativo){
+  if(!confirm(`${ativo?'Ativar':'Desativar'} este acesso?`))return;
+  const {error}=await sb.from("equipe").update({ativo,atualizado_em:new Date().toISOString()}).eq("id",id).eq("sessao",SESSAO);
+  if(error){alert("Não foi possível alterar o cadastro.");return}await carregarEquipeNuvem();
+}
+async function redefinirCodigoEquipe(id){
+  if(!confirm("Gerar um novo código? O código anterior deixará de funcionar."))return;
+  const codigo=gerarCodigoEquipe(),sal=gerarSalEquipe(),codigo_hash=await hashCodigoEquipe(codigo,sal);
+  const {error}=await sb.from("equipe").update({codigo_hash,codigo_salt:sal,atualizado_em:new Date().toISOString()}).eq("id",id).eq("sessao",SESSAO);
+  if(error){alert("Não foi possível gerar o novo código.");return}codigosTemporarios.set(id,codigo);await carregarEquipeNuvem();
+}
+function enviarAcessoWhatsapp(id){
+  const m=(S.equipe||[]).find(x=>x.id===id),codigo=codigosTemporarios.get(id);if(!m)return;
+  if(!codigo){alert("Por segurança, o código antigo não fica visível. Toque em “Novo código” para gerar e enviar outro.");return}
+  const msg=`Olá, ${m.nome}! Seu acesso ao Inventário JIT está pronto.\n\nLink: ${URL_ACESSO}\nNome: ${m.nome}\nCódigo individual: ${codigo}\n\nAo entrar, toque em “Estou pronto para contar”. Não compartilhe este código.`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`,"_blank","noopener");
+}
+async function verificarAcessoEquipe(nome,codigo){
+  if(!ONLINE||!sb)return {ok:true,membro:null,temporario:true};
+  try{
+    const {data,error}=await sb.from("equipe").select("id,nome,nome_norm,codigo_hash,codigo_salt,ativo").eq("sessao",SESSAO).eq("nome_norm",normalizarNome(nome)).maybeSingle();
+    if(error)throw error;atualizarStatusEquipe(true);
+    if(!data||!data.ativo||!/^[0-9]{6}$/.test(codigo))return {ok:false};
+    const hash=await hashCodigoEquipe(codigo,data.codigo_salt);if(hash!==data.codigo_hash)return {ok:false};
+    await sb.from("equipe").update({ultimo_acesso:new Date().toISOString()}).eq("id",data.id);
+    return {ok:true,membro:data};
+  }catch(e){atualizarStatusEquipe(false);return {ok:true,membro:null,temporario:true};}
+}
 async function buscarPresencasAtivas(){
   if(typeof carregarPresencasNuvem!=="function")return;
   const lista=await carregarPresencasNuvem();S.presencas=lista||[];
@@ -1029,11 +1143,11 @@ function mostrarTela(id){document.querySelectorAll(".screen").forEach(s=>s.class
 async function voltarLogin(){
   if(S.funcao==="estoquista"&&typeof desativarPresencaNuvem==="function")await desativarPresencaNuvem();
   el("hdrUser").textContent="";el("hdrTitle").textContent="INVENTÁRIO JIT";
-  el("iNome").value="";el("iSenha").value="";el("alertSenhaErro").classList.remove("show");
+  el("iNome").value="";el("iSenha").value="";el("iCodigoEstoque").value="";el("alertSenhaErro").classList.remove("show");el("alertCodigoErro").classList.remove("show");
   el("cardNav").style.display="";el("cardItem").style.display="none";el("cardFim").style.display="none";
   selPerfil("estoquista");
   fecharScanner();
-  S.funcao=null;S.usuario="";
+  S.funcao=null;S.usuario="";S.membroEquipe=null;S.pronto=false;
   mostrarTela("sLogin");
 }
 
@@ -1766,8 +1880,8 @@ async function puxarTudo(){
     }
     salvar();
     if(typeof atualizarPainel==="function") atualizarPainel();
-    if(S.funcao==="lider")buscarPresencasAtivas();
-    if(S.funcao==="estoquista"){await registrarPresencaNuvem();await iniciarEstoquista();}
+    if(S.funcao==="lider"){buscarPresencasAtivas();carregarEquipeNuvem();}
+    if(S.funcao==="estoquista"&&S.pronto){await registrarPresencaNuvem();await iniciarEstoquista();}
   }catch(e){ console.log("puxarTudo falhou:", e.message); }
 }
 
@@ -1818,7 +1932,7 @@ function escutarTempoReal(){
         if(payload.new){ S.modo=payload.new.modo||S.modo; S.selecao=payload.new.selecao||S.selecao;S.recontar=payload.new.recontar||{};
           const antes=S.distribuicaoAtiva;S.distribuicaoAtiva=!!payload.new.distribuicao_ativa;S.distribuidoEm=payload.new.distribuido_em||null;S.distribuidoPor=payload.new.distribuido_por||null;
           if(Array.isArray(payload.new.itens)&&payload.new.itens.length)aplicarBaseEstoque(payload.new.itens,false,{em:payload.new.estoque_atualizado_em,por:payload.new.estoque_atualizado_por}); salvar();
-          if(S.funcao==="estoquista"&&(!antes||S.distribuicaoAtiva))iniciarEstoquista();
+          if(S.funcao==="estoquista"&&S.pronto&&(!antes||S.distribuicaoAtiva))iniciarEstoquista();
           if(typeof atualizarPainel==="function") atualizarPainel(); }
       })
     .on("postgres_changes", {event:"*", schema:"public", table:"presencas", filter:`sessao=eq.${SESSAO}`},
@@ -1834,7 +1948,10 @@ let presencaTimer=null;
 async function registrarPresencaNuvem(){
   if(!ONLINE||S.funcao!=="estoquista")return false;
   try{
-    const {error}=await sb.from("presencas").upsert({sessao:SESSAO,usuario:S.usuario,dispositivo_id:obterDispositivoId(),ativo:true,ultimo_ping:new Date().toISOString()},{onConflict:"sessao,usuario"});
+    const registro={sessao:SESSAO,usuario:S.usuario,dispositivo_id:obterDispositivoId(),ativo:true,ultimo_ping:new Date().toISOString()};
+    if(S.cadastroEquipeAtivo||S.membroEquipe){registro.pronto=!!S.pronto;registro.equipe_id=S.membroEquipe?.id||null;}
+    let {error}=await sb.from("presencas").upsert(registro,{onConflict:"sessao,usuario"});
+    if(error&&("pronto" in registro)){delete registro.pronto;delete registro.equipe_id;({error}=await sb.from("presencas").upsert(registro,{onConflict:"sessao,usuario"}));}
     if(error)throw error;
     if(!presencaTimer)presencaTimer=setInterval(()=>registrarPresencaNuvem(),30000);return true;
   }catch(e){console.log("presença falhou:",e.message);return false;}
@@ -1842,13 +1959,15 @@ async function registrarPresencaNuvem(){
 async function desativarPresencaNuvem(){
   if(presencaTimer){clearInterval(presencaTimer);presencaTimer=null;}
   if(!ONLINE||!S.usuario)return;
-  try{await sb.from("presencas").update({ativo:false,ultimo_ping:new Date().toISOString()}).eq("sessao",SESSAO).eq("usuario",S.usuario);}catch(e){}
+  try{let {error}=await sb.from("presencas").update({ativo:false,pronto:false,ultimo_ping:new Date().toISOString()}).eq("sessao",SESSAO).eq("usuario",S.usuario);if(error)await sb.from("presencas").update({ativo:false,ultimo_ping:new Date().toISOString()}).eq("sessao",SESSAO).eq("usuario",S.usuario);}catch(e){}
 }
 async function carregarPresencasNuvem(){
   if(!ONLINE)return [];
   try{
     const limite=new Date(Date.now()-15*60*1000).toISOString();
-    const {data:p,error:e1}=await sb.from("presencas").select("usuario,ultimo_ping").eq("sessao",SESSAO).eq("ativo",true).gte("ultimo_ping",limite).order("usuario");if(e1)throw e1;
+    let consulta=sb.from("presencas").select("usuario,ultimo_ping,pronto").eq("sessao",SESSAO).eq("ativo",true).eq("pronto",true).gte("ultimo_ping",limite).order("usuario");
+    let {data:p,error:e1}=await consulta;
+    if(e1){({data:p,error:e1}=await sb.from("presencas").select("usuario,ultimo_ping").eq("sessao",SESSAO).eq("ativo",true).gte("ultimo_ping",limite).order("usuario"));}if(e1)throw e1;
     const cont={};await Promise.all((p||[]).map(async x=>{const {count,error}=await sb.from("atribuicoes").select("id",{count:"exact",head:true}).eq("sessao",SESSAO).eq("usuario",x.usuario);if(error)throw error;cont[x.usuario]=count||0;}));
     return (p||[]).map(x=>({...x,itens_atribuidos:cont[x.usuario]||0}));
   }catch(e){console.log("buscar presenças falhou:",e.message);return [];}
