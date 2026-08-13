@@ -755,6 +755,7 @@ function atualizarAlertasBase(){
 }
 function aplicarBaseEstoque(novaBase,propagar=true,meta=null){
   if(!Array.isArray(novaBase)||!novaBase.length)throw new Error("A base não contém itens válidos.");
+  if(!propagar && meta && meta.em && S.baseAtualizadaEm===meta.em) return;
   ITENS.splice(0,ITENS.length,...novaBase);
   if(meta){S.baseAtualizadaEm=meta.em||S.baseAtualizadaEm;S.baseAtualizadaPor=meta.por||S.baseAtualizadaPor;}
   ZONAS=[...new Set(ITENS.map(i=>i.zona))].sort();
