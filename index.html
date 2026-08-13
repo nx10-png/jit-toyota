@@ -879,7 +879,8 @@ async function entrar(){
   }else{
     const codigo=el("iCodigoEstoque").value.trim();
     const acesso=await verificarAcessoEquipe(nome,codigo);
-    if(!acesso.ok){el("alertCodigoErro").classList.add("show");el("iCodigoEstoque").value="";el("iCodigoEstoque").focus();return;}
+    if(!acesso.ok&&acesso.pendente){el("alertCodigoErro").textContent="Cadastro solicitado. Aguarde a lider liberar seu acesso no painel.";el("alertCodigoErro").classList.add("show");el("iCodigoEstoque").value="";el("iCodigoEstoque").focus();return;}
+  if(!acesso.ok){el("alertCodigoErro").classList.add("show");el("iCodigoEstoque").value="";el("iCodigoEstoque").focus();return;}
     S.membroEquipe=acesso.membro||null;
   }
   S.usuario=nome; S.funcao=S.perfilSel;
