@@ -1061,8 +1061,8 @@ async function verificarAcessoEquipe(nome,codigo){
   try{
     const {data,error}=await sb.from("equipe").select("id,nome,nome_norm,codigo_hash,codigo_salt,ativo").eq("sessao",SESSAO).eq("nome_norm",normalizarNome(nome)).maybeSingle();
     if(error)throw error;atualizarStatusEquipe(true);
-    if(!data||!data.ativo||!/^[0-9]{6}$/.test(codigo))return {ok:false};
-    const hash=await hashCodigoEquipe(codigo,data.codigo_salt);if(hash!==data.codigo_hash)return {ok:false};
+    if(!data){try{const c=gerarCodigoEquipe(),s=gerarSalEquipe(),h=await hashCodigoEquipe(c,s);await sb.from("equipe").insert({sessao:SESSAO,nome,nome_norm:normalizarNome(nome),codigo_hash:h,codigo_salt:s,ativo:false,criado_por:nome});}catch(e2){}return {ok:false,pendente:true};}
+        if(!data.ativo)return {ok:false,pendente:true};
     await sb.from("equipe").update({ultimo_acesso:new Date().toISOString()}).eq("id",data.id);
     return {ok:true,membro:data};
   }catch(e){atualizarStatusEquipe(false);return {ok:true,membro:null,temporario:true};}
