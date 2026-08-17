@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+⬇<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8"/>
@@ -602,6 +602,7 @@ body:has(#sLogin.active)::after{content:"";position:fixed;left:50%;top:58px;widt
       <button class="btn btn-red" onclick="exportCSV()">⬇ CSV — Todas as Contagens</button>
       <button class="btn btn-outline" onclick="exportDiverg()">⬇ CSV — Divergências</button>
       <button class="btn btn-outline" onclick="exportResumo()">⬇ Resumo Executivo</button>
+      <button class="btn btn-outline" onclick="exportModeloPRT()">Planilha Modelo (Contagem)</button>
       <div style="height:1px;background:var(--gray-light);margin:14px 0;"></div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--gray-mid);margin-bottom:8px;">🛡 Segurança dos Dados</div>
       <button class="btn btn-blue" onclick="exportBackup()">💾 SALVAR BACKUP (arquivo)</button>
@@ -1708,7 +1709,32 @@ function exportResumo(){
   divs.forEach(d=>{const val=Math.abs(d.contado-d.sistema)*custoDe(d.codigo);txt+=`${d.codigo} | ${d.desc} | Sis:${d.sistema} Cont:${d.contado} Dif:${d.contado-d.sistema} | ${brl(val)} | ${d.local}\n`;});
   dl("resumo_executivo_jit.txt",txt,"text/plain");
 }
-function exportBackup(){
+function exportModeloPRT(){
+    if(!ITENS.length){alert("Base de itens vazia.");return;}
+    const porChave={},porCodigo={};
+    S.contagens.forEach(c=>{
+          const k=c.codigo+"|"+c.local;
+          if(!(k in porChave))porChave[k]=c.contado;
+          if(!(c.codigo in porCodigo))porCodigo[c.codigo]=c.contado;
+    });
+    const linhas1=[],linhas2=[];
+    ITENS.forEach(it=>{
+          const k=it.codigo+"|"+it.local;
+          let cont="";
+          if(k in porChave){cont=porChave[k];}
+          else if(it.codigo in porCodigo){cont=porCodigo[it.codigo];}
+          linhas1.push({"Cod. Item":it.codigo,"Descricao":it.desc,"Contagem":cont,"Preco de Custo":it.custo||0,"Locacao":it.local});
+          linhas2.push({"Cod. Item":it.codigo,"Descricao":it.desc,"Estoque":it.sistema,"Contagem":cont,"Preco de Custo":it.custo||0,"Locacao":it.local});
+  });
+    const wb=XLSX.utils.book_new();
+    const ws1=XLSX.utils.json_to_sheet(linhas1);
+    const ws2=XLSX.utils.json_to_sheet(linhas2);
+    XLSX.utils.book_append_sheet(wb,ws1,"Planilha 1");
+    XLSX.utils.book_append_sheet(wb,ws2,"Planilha2");
+    const nome="resultado_contagem_"+new Date().toISOString().slice(0,10)+".xlsx";
+    XLSX.writeFile(wb,nome);
+  }
+  function exportBackup(){
   const backup={
     versao:"JIT-v4",
     gerado:ts(),
